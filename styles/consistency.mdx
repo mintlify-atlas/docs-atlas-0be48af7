@@ -1,0 +1,80 @@
+---
+title: "Consistency"
+description: "Enforce consistent use of one form of a term over another across a document."
+---
+
+The `consistency` extension point ensures that when two interchangeable forms of a term exist (for example, "front end" and "frontend"), only one form is used throughout a document. Once the first occurrence of either form is seen, any subsequent occurrence of the other form triggers an alert.
+
+```yaml
+extends: consistency
+message: "Use either '%s' or '%s' consistently, not both."
+level: warning
+either:
+  front end: frontend
+  e-mail: email
+```
+
+## Parameters
+
+<ParamField path="either" type="map[string]string" required>
+  A map of `option-A: option-B` pairs. Each key and value is a regular expression. Only one form from each pair may appear in a document; if both appear, an alert is raised on the second occurrence.
+</ParamField>
+
+<ParamField path="nonword" type="boolean">
+  When `true`, removes the default word boundary wrappers (`\b`) from both patterns. Useful when patterns contain punctuation or are intended to match sub-word strings.
+</ParamField>
+
+<ParamField path="ignorecase" type="boolean">
+  When `true`, matching is case-insensitive for both alternatives. Defaults to `false`.
+</ParamField>
+
+<ParamField path="exceptions" type="string[]">
+  A list of strings or patterns excluded from consideration. Matching exceptions are not counted when determining which form was used first.
+
+  <Note>`exceptions` is available on `consistency` through the shared `Definition` struct but is not decoded from YAML in the same way as other extension points. Prefer `ignorecase` and `nonword` to handle edge cases.</Note>
+</ParamField>
+
+## Examples
+
+### Enforce a single spelling variant
+
+```yaml
+extends: consistency
+message: "Use '%s' or '%s' consistently. Don't mix both forms."
+level: warning
+either:
+  front end: frontend
+  back end: backend
+  e-mail: email
+  web site: website
+```
+
+### Handle British vs. American spelling
+
+```yaml
+extends: consistency
+message: "Mix of British and American spelling detected: '%s' vs '%s'."
+level: suggestion
+ignorecase: true
+either:
+  colour: color
+  behaviour: behavior
+  centre: center
+  licence: license
+```
+
+### Case-sensitive product name consistency
+
+```yaml
+extends: consistency
+message: "Use one consistent form: '%s' or '%s'."
+level: error
+either:
+  GitHub: Github
+  JavaScript: Javascript
+  TypeScript: Typescript
+```
+
+<Tip>
+  `consistency` checks are file-scoped. The rule tracks which form appeared first across all blocks in the file, not just within a single paragraph or section.
+</Tip>

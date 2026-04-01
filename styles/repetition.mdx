@@ -1,0 +1,83 @@
+---
+title: "Repetition"
+description: "Flag consecutive or near-duplicate tokens in prose."
+---
+
+The `repetition` extension point detects when the same token appears two or more times consecutively in a scope. It is most commonly used to catch doubled words such as "the the" or "a a", which are easy to miss when editing.
+
+```yaml
+extends: repetition
+message: "'%s' is repeated."
+level: error
+tokens:
+  - '[^\s]+'
+```
+
+## Parameters
+
+<ParamField path="tokens" type="string[]" required>
+  A list of regular expression strings. The tokens are joined with `|` and compiled into a single pattern. Any consecutive pair of matches (same text appearing back-to-back) triggers the rule.
+</ParamField>
+
+<ParamField path="ignorecase" type="boolean">
+  When `true`, the comparison between consecutive tokens is case-insensitive. Defaults to `false`.
+</ParamField>
+
+<ParamField path="alpha" type="boolean">
+  When `true`, only purely alphabetic tokens are considered for repetition. Non-alphabetic matches (numbers, punctuation, etc.) are ignored even if they repeat.
+</ParamField>
+
+<ParamField path="exceptions" type="string[]">
+  A list of strings or patterns excluded from triggering the rule even when they repeat consecutively.
+</ParamField>
+
+## Examples
+
+### Flag any repeated word
+
+```yaml
+extends: repetition
+message: "'%s' is repeated."
+level: error
+ignorecase: true
+alpha: true
+tokens:
+  - '[^\s.]+'
+```
+
+### Flag repeated articles only
+
+```yaml
+extends: repetition
+message: "The article '%s' is repeated."
+level: error
+ignorecase: true
+tokens:
+  - a
+  - an
+  - the
+```
+
+### Built-in Vale.Repetition rule
+
+The built-in `Vale.Repetition` rule is equivalent to:
+
+```yaml
+extends: repetition
+message: "'%s' is repeated!"
+level: error
+scope: text
+ignorecase: true
+alpha: true
+action:
+  name: edit
+  params:
+    - truncate
+    - " "
+tokens:
+  - '[^\s.!?]+'
+```
+
+<Note>
+  The rule only fires when both consecutive matches appear in the same sentence. A token that ends one sentence and starts the next (e.g., "...about that. That is...") does not trigger the rule.
+</Note>

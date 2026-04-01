@@ -1,0 +1,191 @@
+---
+title: "Output formats"
+description: "The built-in CLI, line, and JSON output formats, plus custom Go template support."
+---
+
+Vale supports four output modes, selected with the `--output` flag. The default is `CLI`.
+
+<Tabs>
+  <Tab title="CLI">
+
+The default human-readable output. Vale groups alerts by file, shows the line and column of each alert, and prints a summary at the end.
+
+```bash
+vale docs/
+# same as:
+vale --output=CLI docs/
+```
+
+**Example output:**
+
+```
+ docs/guide.md
+  12:4   warning  Use 'for example' instead of 'e.g.'    Vale.Avoid
+  34:1   error    Found a passive construction.           MyStyle.Passive
+  58:12  suggestion  Consider a shorter alternative.     write-good.TooWordy
+
+ docs/reference.md
+  7:1    error    Heading must start with a capital letter.  MyStyle.Headings
+
+✖ 2 errors, 1 warning and 1 suggestion in 2 files.
+```
+
+Each row contains:
+
+| Column | Content |
+|--------|---------|
+| `line:col` | Location within the file |
+| level | `error`, `warning`, or `suggestion` (color-coded) |
+| message | Human-readable explanation |
+| rule | The `StyleName.RuleName` identifier |
+
+The summary line uses `✖` when there are errors or warnings, and `✔` when only suggestions (or nothing) were found.
+
+**Disable line wrapping:**
+
+Long messages are wrapped by default. Pass `--no-wrap` to disable this:
+
+```bash
+vale --no-wrap docs/
+```
+
+  </Tab>
+  <Tab title="line">
+
+A compact, machine-readable format with one alert per line. Suitable for editors, CI tools, and scripts that parse line-by-line output.
+
+```bash
+vale --output=line docs/
+```
+
+**Format:**
+
+```
+<file>:<line>:<col>:<rule>:<message>
+```
+
+**Example output:**
+
+```
+docs/guide.md:12:4:Vale.Avoid:Use 'for example' instead of 'e.g.'
+docs/guide.md:34:1:MyStyle.Passive:Found a passive construction.
+docs/reference.md:7:1:MyStyle.Headings:Heading must start with a capital letter.
+```
+
+<Note>
+  The `line` format omits the severity level. If you need severity information in a parseable format, use `--output=JSON` instead.
+</Note>
+
+  </Tab>
+  <Tab title="JSON">
+
+Structured JSON output. Vale emits a single JSON object mapping each file path to an array of alert objects.
+
+```bash
+vale --output=JSON docs/
+```
+
+**Top-level structure:**
+
+```json
+{
+  "docs/guide.md": [ ...alerts... ],
+  "docs/reference.md": [ ...alerts... ]
+}
+```
+
+**Alert object fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `Action` | object | A suggested fix with `Name` (e.g. `"replace"`) and `Params` (substitution values). |
+| `Check` | string | The rule identifier, e.g. `"Vale.Avoid"`. |
+| `Description` | string | Extended explanation of why the rule fired. |
+| `Line` | number | 1-based line number in the source file. |
+| `Link` | string | URL to reference material for this rule. |
+| `Match` | string | The exact text that triggered the rule. |
+| `Message` | string | The human-readable alert message. |
+| `Severity` | string | `"suggestion"`, `"warning"`, or `"error"`. |
+| `Span` | array | `[begin, end]` column offsets within the line (1-based). |
+
+**Complete example:**
+
+```json
+{
+  "docs/guide.md": [
+    {
+      "Action": {
+        "Name": "replace",
+        "Params": ["for example"]
+      },
+      "Check": "Vale.Avoid",
+      "Description": "Prefer 'for example' over Latin abbreviations.",
+      "Line": 12,
+      "Link": "https://vale.sh/docs/styles",
+      "Match": "e.g.",
+      "Message": "Use 'for example' instead of 'e.g.'",
+      "Severity": "warning",
+      "Span": [4, 7]
+    },
+    {
+      "Action": {
+        "Name": "",
+        "Params": []
+      },
+      "Check": "MyStyle.Passive",
+      "Description": "",
+      "Line": 34,
+      "Link": "",
+      "Match": "was written",
+      "Message": "Found a passive construction.",
+      "Severity": "error",
+      "Span": [1, 11]
+    }
+  ]
+}
+```
+
+<Tip>
+  Pipe JSON output through `jq` for quick inspection:
+
+  ```bash
+  vale --output=JSON docs/ | jq 'to_entries[] | select(.value | length > 0)'
+  ```
+</Tip>
+
+  </Tab>
+  <Tab title="Custom template">
+
+Pass a path to a Go template file to produce completely custom output.
+
+```bash
+vale --output=/path/to/template.tmpl docs/
+```
+
+The template receives the same data structure as the JSON output: a `map[string][]Alert` where each key is a file path and each value is a slice of alert objects. The `Alert` fields match the JSON field names.
+
+**Example template — GitHub Actions annotation format:**
+
+```
+{{- range $file, $alerts := . -}}
+{{- range $alerts -}}
+::{{.Severity}} file={{$file}},line={{.Line}},col={{index .Span 0}}::{{.Message}} ({{.Check}})
+{{ end -}}
+{{- end -}}
+```
+
+**Output:**
+
+```
+::warning file=docs/guide.md,line=12,col=4::Use 'for example' instead of 'e.g.' (Vale.Avoid)
+::error file=docs/guide.md,line=34,col=1::Found a passive construction. (MyStyle.Passive)
+```
+
+Store template files in `StylesPath/config/templates/` so Vale can locate them by name alone:
+
+```bash
+vale --output=github-annotations.tmpl docs/
+```
+
+  </Tab>
+</Tabs>

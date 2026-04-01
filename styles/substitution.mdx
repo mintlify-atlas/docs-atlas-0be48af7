@@ -1,0 +1,114 @@
+---
+title: "Substitution"
+description: "Flag tokens that should be replaced with preferred alternatives."
+---
+
+The `substitution` extension point flags text that matches a pattern and suggests a specific replacement. Use it to enforce preferred terminology, correct common misspellings, or standardize abbreviations.
+
+```yaml
+extends: substitution
+message: "Use '%s' instead of '%s'."
+level: warning
+swap:
+  utilize: use
+  e-mail: email
+```
+
+The `message` receives two `%s` placeholders: the first is the preferred form, the second is the matched text.
+
+## Parameters
+
+<ParamField path="swap" type="map[string]string" required>
+  A map of `pattern: replacement` pairs. Each key is a regular expression; the value is the preferred replacement text. Keys are sorted longest-first before compiling so that longer phrases are matched before shorter sub-patterns.
+</ParamField>
+
+<ParamField path="exceptions" type="string[]">
+  A list of strings or patterns excluded from matching even when they would otherwise trigger the rule.
+</ParamField>
+
+<ParamField path="ignorecase" type="boolean">
+  When `true`, matching is case-insensitive. Defaults to `false`.
+</ParamField>
+
+<ParamField path="nonword" type="boolean">
+  When `true`, removes the default word boundary wrappers (`\b`). Use this when patterns include punctuation or span non-word characters.
+</ParamField>
+
+<ParamField path="append" type="boolean">
+  When `true`, the compiled pattern is appended (rather than prepended) to any surrounding regex template. Defaults to `false`.
+</ParamField>
+
+<ParamField path="vocab" type="boolean">
+  When `true` (default), terms from the active Vale Vocabulary are automatically added to `exceptions`. Set to `false` to ignore Vocab entries for this rule.
+</ParamField>
+
+<ParamField path="capitalize" type="boolean">
+  When `true`, Vale automatically capitalizes the suggested replacement to match the capitalization of the matched text. For example, if `utilize` is matched as `Utilize` (sentence-initial), the suggestion will also be capitalized as `Use`.
+
+  ```yaml
+  extends: substitution
+  message: "Use '%s' instead of '%s'."
+  level: warning
+  capitalize: true
+  swap:
+    utilize: use
+    commence: begin
+  ```
+</ParamField>
+
+## Examples
+
+### Preferred terminology
+
+```yaml
+extends: substitution
+message: "Use '%s' instead of '%s'."
+level: warning
+ignorecase: true
+swap:
+  utilize: use
+  e-mail: email
+  set up: setup
+  log in: login
+  comprised of: composed of
+```
+
+### Standardize product names
+
+```yaml
+extends: substitution
+message: "Use the correct product name '%s', not '%s'."
+level: error
+swap:
+  github copilot: GitHub Copilot
+  copilot ai: GitHub Copilot
+  open ai: OpenAI
+```
+
+### Multiple replacement options
+
+Separate alternatives in the replacement value with `|`. Vale presents all options to the user.
+
+```yaml
+extends: substitution
+message: "Use '%s' instead of '%s'."
+level: suggestion
+swap:
+  (he|she)\s+said: they said|the speaker said
+```
+
+### Capture-group back-references in replacements
+
+You can use `$1`, `$2`, etc. in the replacement to reference capture groups from the key pattern.
+
+```yaml
+extends: substitution
+message: "Use '%s' instead of '%s'."
+level: warning
+swap:
+  (\w+)ise\b: $1ize
+```
+
+<Note>
+  Capture groups in swap keys are automatically converted to non-capturing groups when building the combined pattern, so they do not interfere with the overall match index tracking.
+</Note>

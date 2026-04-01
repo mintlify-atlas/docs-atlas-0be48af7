@@ -1,0 +1,204 @@
+---
+title: "CI/CD integration"
+description: "Run Vale in continuous integration pipelines to enforce prose style on every commit."
+---
+
+Vale is well-suited for CI/CD because it behaves like any other code linter: it exits with code `1` when errors are found and `0` otherwise, letting your pipeline fail or pass accordingly.
+
+Two flags are especially useful in automated environments:
+
+| Flag | Description |
+|------|-------------|
+| `--no-exit` | Always exit `0`, even when errors are found. Useful for advisory-only runs. |
+| `--output=JSON` | Emit machine-readable JSON. Useful for downstream processing. |
+| `--output=line` | Emit one alert per line. Compatible with tools that parse line-based output. |
+| `--sort` | Sort files by name for deterministic, diffable output. |
+
+---
+
+## CI platforms
+
+<Tabs>
+  <Tab title="GitHub Actions">
+    Use the official [`errata-ai/vale-action`](https://github.com/errata-ai/vale-action) for the simplest GitHub Actions setup. The action installs Vale, runs `vale sync` to pull down packages, and then lints the files you specify.
+
+    ```yaml .github/workflows/vale.yml
+    name: Prose lint
+
+    on: [push, pull_request]
+
+    jobs:
+      vale:
+        runs-on: ubuntu-latest
+        steps:
+          - uses: actions/checkout@v4
+
+          - name: Vale
+            uses: errata-ai/vale-action@reviewdog
+            with:
+              files: docs/
+            env:
+              GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    ```
+
+    <Tip>
+      The `reviewdog` variant of the action posts inline PR comments for each
+      alert. Use the `reporter: github-pr-review` input to control review
+      behavior.
+    </Tip>
+
+    If you prefer to install Vale manually, download the binary directly:
+
+    ```yaml .github/workflows/vale-manual.yml
+    name: Prose lint (manual)
+
+    on: [push, pull_request]
+
+    jobs:
+      vale:
+        runs-on: ubuntu-latest
+        steps:
+          - uses: actions/checkout@v4
+
+          - name: Install Vale
+            run: |
+              curl -sfL https://install.vale.sh | sh -s -- -b /usr/local/bin
+
+          - name: Sync packages
+            run: vale sync
+
+          - name: Lint
+            run: vale --output=line --sort docs/
+    ```
+  </Tab>
+
+  <Tab title="GitLab CI">
+    Add a Vale job to your `.gitlab-ci.yml`. Download the Vale binary, sync packages, then run the linter:
+
+    ```yaml .gitlab-ci.yml
+    stages:
+      - lint
+
+    vale:
+      stage: lint
+      image: alpine:latest
+      before_script:
+        - apk add --no-cache curl
+        - curl -sfL https://install.vale.sh | sh -s -- -b /usr/local/bin
+      script:
+        - vale sync
+        - vale --output=line --sort docs/
+      rules:
+        - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+        - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+    ```
+
+    <Note>
+      To fail the pipeline only on errors (not warnings or suggestions), add
+      `--minAlertLevel=error` to the `vale` command.
+    </Note>
+  </Tab>
+
+  <Tab title="Pre-commit">
+    Vale is available as a [pre-commit](https://pre-commit.com) hook. Add it to your `.pre-commit-config.yaml`:
+
+    ```yaml .pre-commit-config.yaml
+    repos:
+      - repo: https://github.com/errata-ai/vale
+        rev: v3.7.1   # replace with the latest release tag
+        hooks:
+          - id: vale
+    ```
+
+    The hook runs Vale on every `text`-type file staged for commit. Install hooks after adding the configuration:
+
+    ```bash
+    pre-commit install
+    ```
+
+    <Tip>
+      Run `pre-commit autoupdate` periodically to keep the Vale hook pinned to
+      the latest release.
+    </Tip>
+  </Tab>
+
+  <Tab title="Docker">
+    The [`jdkato/vale`](https://hub.docker.com/r/jdkato/vale) image bundles Vale along with all format dependencies (AsciiDoc, reStructuredText, MDX). Mount your documentation directory as a volume:
+
+    ```bash
+    # Lint the docs/ directory in the current project
+    docker run --rm -v "$(pwd):/docs" jdkato/vale /docs/docs/
+    ```
+
+    Pass flags the same way you would with the local binary:
+
+    ```bash
+    docker run --rm -v "$(pwd):/docs" jdkato/vale \
+      --output=JSON \
+      --sort \
+      /docs/docs/
+    ```
+
+    The image includes `py3-docutils`, `asciidoctor`, `nodejs`, and `mdx2vast` to support all markup formats Vale understands.
+  </Tab>
+
+  <Tab title="Generic shell">
+    For any CI system that lets you run shell commands, use the install script to download the latest Vale binary:
+
+    ```bash
+    # Download and install Vale
+    curl -sfL https://install.vale.sh | sh -s -- -b /usr/local/bin
+
+    # Sync style packages defined in .vale.ini
+    vale sync
+
+    # Run the linter
+    vale --output=line --sort docs/
+    ```
+
+    To pin a specific version:
+
+    ```bash
+    curl -sfL https://install.vale.sh | sh -s -- -b /usr/local/bin v3.7.1
+    ```
+  </Tab>
+</Tabs>
+
+---
+
+## Output formats
+
+<CodeGroup>
+
+```bash JSON output
+vale --output=JSON docs/ | jq '.[] | .[] | select(.Severity == "error")'
+```
+
+```bash Line output (one alert per line)
+vale --output=line --sort docs/
+```
+
+```bash CLI output (default, human-readable)
+vale docs/
+```
+
+</CodeGroup>
+
+Use `--output=JSON` when you need to feed Vale results into another tool or script. Use `--output=line` for CI systems that parse line-format output (for example, tools that follow the `file:line:col: message` convention).
+
+---
+
+## Exit codes
+
+| Exit code | Meaning |
+|-----------|---------|
+| `0` | No errors found (warnings and suggestions do not trigger a non-zero exit). |
+| `1` | One or more errors found. |
+
+Use `--minAlertLevel=error` to ignore warnings and suggestions when determining the exit code. Use `--no-exit` to always exit `0` regardless of results.
+
+<Warning>
+  The exit code is based on the `minAlertLevel` in your `.vale.ini` or the
+  `--minAlertLevel` flag. Make sure this is set correctly for your pipeline so
+  you don't accidentally suppress errors.
+</Warning>

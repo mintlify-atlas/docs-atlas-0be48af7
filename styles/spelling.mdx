@@ -1,0 +1,118 @@
+---
+title: "Spelling"
+description: "Check spelling using Hunspell-compatible dictionaries."
+---
+
+The `spelling` extension point checks each word in the current scope against a Hunspell dictionary and raises an alert for any word that is not recognized. Vale ships with a built-in `Vale.Spelling` rule that uses an English dictionary, and you can override or extend it with custom dictionaries and ignore lists.
+
+```yaml
+extends: spelling
+message: "Did you mean '%s'?"
+level: error
+ignore:
+  - my-project-terms.txt
+```
+
+## Parameters
+
+<ParamField path="ignore" type="string[]">
+  A list of paths to plain-text word list files, one word per line. Words in these files are added to the dictionary and will not be flagged. Paths are resolved relative to `StylesPath`, relative to `StylesPath/config/ignore/`, or as absolute paths.
+</ParamField>
+
+<ParamField path="filters" type="string[]">
+  A list of regular expression patterns. Any word matching one of these patterns is skipped and never checked against the dictionary. By default, Vale skips CamelCase tokens, ALL_CAPS tokens, and tokens containing non-alphabetic characters.
+</ParamField>
+
+<ParamField path="dictionaries" type="string[]">
+  A list of named dictionary identifiers to load from `StylesPath/config/dictionaries/`. Each dictionary must have a `.dic` and `.aff` file with the same base name.
+</ParamField>
+
+<ParamField path="aff" type="string">
+  Path to a Hunspell `.aff` affix file. Used together with `dic` to load a specific dictionary by path rather than by name.
+</ParamField>
+
+<ParamField path="dic" type="string">
+  Path to a Hunspell `.dic` dictionary file. Used together with `aff`.
+</ParamField>
+
+<ParamField path="dicpath" type="string">
+  Path to a directory containing one or more Hunspell dictionaries. Vale searches this directory for `<name>.dic` / `<name>.aff` pairs. Resolved relative to `StylesPath` or as an absolute path.
+</ParamField>
+
+<ParamField path="threshold" type="integer">
+  Minimum number of times a word must appear before it is flagged. Useful for reducing false positives from rarely-used technical terms.
+</ParamField>
+
+<ParamField path="append" type="boolean">
+  When `true`, the specified dictionaries are used in addition to the default English dictionary rather than replacing it.
+</ParamField>
+
+<ParamField path="exceptions" type="string[]">
+  A list of words or patterns excluded from spell-checking even if they are not in any loaded dictionary.
+</ParamField>
+
+## The built-in Vale.Spelling rule
+
+Vale ships with a default `Vale.Spelling` rule that you can enable via `BasedOnStyles = Vale`:
+
+```ini
+StylesPath = styles
+
+[*.md]
+BasedOnStyles = Vale
+```
+
+`Vale.Spelling` automatically reads every word list file found in `StylesPath/config/ignore/`. Create files there (one word per line) to add project-specific terms without writing a custom rule.
+
+## Using ignore files
+
+An ignore file is a plain-text file with one word or phrase per line:
+
+```text
+kubectl
+gRPC
+opentelemetry
+webhook
+OAuth
+falsy
+```
+
+Reference ignore files in the `ignore` key, relative to `StylesPath`:
+
+```yaml
+extends: spelling
+message: "'%s' is not a recognized word."
+level: error
+ignore:
+  - config/ignore/project-terms.txt
+  - config/ignore/product-names.txt
+```
+
+## Loading a custom dictionary
+
+Place Hunspell `.dic` and `.aff` files in `StylesPath/config/dictionaries/` and reference them by name:
+
+```yaml
+extends: spelling
+message: "Spelling error: '%s'."
+level: error
+dictionaries:
+  - en_US
+  - medical-terms
+append: true
+```
+
+## Extending the default dictionary
+
+```yaml
+extends: spelling
+message: "Did you mean '%s'?"
+level: error
+append: true
+ignore:
+  - project-glossary.txt
+```
+
+<Note>
+  Vale's default filters skip: CamelCase words (e.g., `camelCase`), all-uppercase strings (e.g., `HTTP`), and any token containing non-alphabetic characters. Set `custom: true` (not a YAML key; this prevents default filters from being added) if you need full control over which tokens are skipped.
+</Note>

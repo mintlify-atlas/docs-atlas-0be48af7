@@ -1,0 +1,238 @@
+---
+title: "The .vale.ini file"
+description: "Reference for every key Vale reads from .vale.ini, including global options, section-level options, and special sections."
+---
+
+`.vale.ini` is Vale's primary configuration file. It uses the standard [INI format](https://en.wikipedia.org/wiki/INI_file): key-value pairs at the top level set global options, and bracketed headings like `[*.md]` open format-specific sections.
+
+```ini .vale.ini
+; Global options
+StylesPath = .vale/styles
+MinAlertLevel = suggestion
+Packages = Microsoft, Google
+Vocab = MyProject
+
+[formats]
+mdx = md
+
+[*.md]
+BasedOnStyles = Vale, Microsoft
+BlockIgnores = (?s)```.*?```
+TokenIgnores = (\*\*|__)(?:[^*_]|(?:\*\*|__))+(?:\*\*|__)
+```
+
+## Global keys
+
+Global keys must appear **above** any section headers. Placing a global key inside a `[section]` is an error.
+
+<ParamField path="StylesPath" type="string" required>
+  Path to the directory containing Vale styles. Resolved relative to the location of `.vale.ini`.
+
+  ```ini
+  StylesPath = .vale/styles
+  ```
+</ParamField>
+
+<ParamField path="MinAlertLevel" type="string" default="suggestion">
+  The lowest alert level Vale will report. Accepted values: `suggestion`, `warning`, `error`. The CLI flag `--minAlertLevel` overrides this value at runtime.
+
+  ```ini
+  MinAlertLevel = warning
+  ```
+</ParamField>
+
+<ParamField path="Packages" type="string">
+  Comma-separated list of style packages to download when you run `vale sync`. Package names correspond to entries in the Vale package registry or to URLs.
+
+  ```ini
+  Packages = Microsoft, Readability, https://example.com/MyStyle.zip
+  ```
+</ParamField>
+
+<ParamField path="Vocab" type="string">
+  Comma-separated name(s) of vocabulary directories to activate. Each name maps to a subdirectory inside `StylesPath/config/vocabularies/`.
+
+  ```ini
+  Vocab = MyProject, SharedTerms
+  ```
+</ParamField>
+
+<ParamField path="IgnoredScopes" type="string">
+  Comma-separated list of HTML inline tags whose content Vale skips entirely. Useful for suppressing false positives inside elements like `<code>` or `<kbd>`.
+
+  ```ini
+  IgnoredScopes = code, tt, kbd, math, script, style
+  ```
+</ParamField>
+
+<ParamField path="SkippedScopes" type="string">
+  Comma-separated list of HTML block-level tags Vale skips. The entire block, including nested content, is excluded from linting.
+
+  ```ini
+  SkippedScopes = script, style, pre, figure
+  ```
+</ParamField>
+
+<ParamField path="WordTemplate" type="string">
+  A Go regular expression template used when Vale converts a YAML word list into a pattern. The placeholder `$word` is replaced with each term. Useful for enforcing word-boundary behavior in non-Latin scripts.
+
+  ```ini
+  WordTemplate = \b(?:%s)\b
+  ```
+</ParamField>
+
+<ParamField path="NLPEndpoint" type="string">
+  URL of an external NLP API Vale calls for rules that require part-of-speech tagging or other language-model features.
+
+  ```ini
+  NLPEndpoint = http://localhost:8080
+  ```
+</ParamField>
+
+<ParamField path="IgnoredClasses" type="string">
+  Comma-separated list of HTML `class` attribute values whose content Vale skips entirely. Useful for suppressing false positives on elements with specific CSS classes.
+
+  ```ini
+  IgnoredClasses = no-vale, skip-lint, code-sample
+  ```
+</ParamField>
+
+## Special sections
+
+### `[formats]`
+
+Maps unknown or custom file extensions to known Vale formats. The key is the source extension (without `.`) and the value is the target format name.
+
+```ini
+[formats]
+mdx = md
+svx = md
+typ = rst
+```
+
+### `[asciidoctor]`
+
+Passes custom attribute key-value pairs to the Asciidoctor processor when Vale parses `.adoc` files.
+
+```ini
+[asciidoctor]
+experimental = ""
+attribute-missing = drop
+```
+
+## Section-level keys
+
+Bracketed section headers match files by glob pattern. Keys inside a section apply only to matching files.
+
+```ini
+[*.md]
+BasedOnStyles = Vale, Microsoft
+
+[docs/**/*.rst]
+BasedOnStyles = Google
+BlockIgnores = (?s)\.\. code-block::.*?\n\n
+```
+
+<ParamField path="BasedOnStyles" type="string">
+  Comma-separated list of styles to apply to matching files. All rules in each named style are loaded. Rules can be selectively disabled inline by setting them to `NO`.
+
+  ```ini
+  [*.md]
+  BasedOnStyles = Vale, Microsoft
+  Microsoft.Contractions = NO
+  ```
+</ParamField>
+
+<ParamField path="BlockIgnores" type="string">
+  Comma-separated list of regular expressions. Any region of the document matching one of these patterns is removed before rules run, preventing false positives inside multi-line constructs.
+
+  ```ini
+  [*.md]
+  BlockIgnores = (?s)```.*?```
+  ```
+</ParamField>
+
+<ParamField path="TokenIgnores" type="string">
+  Comma-separated list of regular expressions for inline tokens to strip before linting. Unlike `BlockIgnores`, these are applied at the token level rather than removing whole blocks.
+
+  ```ini
+  [*.md]
+  TokenIgnores = (\*\*|__)(?:[^*_]|(?:\*\*|__))+(?:\*\*|__)
+  ```
+</ParamField>
+
+<ParamField path="CommentDelimiters" type="string">
+  A comma-separated pair of strings defining custom comment delimiters for a file type. Vale uses these to identify prose within comments in source code files that don't have built-in delimiter support.
+
+  ```ini
+  [*.tex]
+  CommentDelimiters = %, \n
+  ```
+
+  Exactly two delimiters must be provided: the start delimiter and the end delimiter.
+</ParamField>
+
+<ParamField path="Transform" type="string">
+  Path to an XSLT stylesheet used to transform the file before Vale processes it. Useful for XML-based formats that need pre-processing.
+
+  ```ini
+  [*.xml]
+  Transform = styles/my-transform.xsl
+  ```
+</ParamField>
+
+<ParamField path="Lang" type="string">
+  Associates a language code with files matching this section. Used when Vale calls an external NLP endpoint (`NLPEndpoint`) to supply the language for part-of-speech tagging.
+
+  ```ini
+  [*.fr.md]
+  Lang = fr
+  ```
+</ParamField>
+
+## Config merging
+
+Vale merges multiple configuration files when both a global config (`~/.config/vale/.vale.ini`) and a project-level `.vale.ini` are present. Project-level values shadow global values for the same key. List-type keys (such as `BasedOnStyles`) are merged, with project values appended after global values.
+
+<Tip>
+  Use the global config for defaults that apply to all your projects — for example, a shared `StylesPath` or a personal vocabulary — and reserve `.vale.ini` in each project for project-specific styles and overrides.
+</Tip>
+
+## Complete example
+
+```ini .vale.ini
+; ─── Global ────────────────────────────────────────────────────────────────────
+StylesPath = .vale/styles
+MinAlertLevel = suggestion
+
+Packages = Microsoft, Readability
+
+Vocab = MyProject
+
+IgnoredScopes = code, tt, kbd
+SkippedScopes = script, style, pre
+
+; ─── Format mappings ───────────────────────────────────────────────────────────
+[formats]
+mdx = md
+
+; ─── Asciidoctor attributes ────────────────────────────────────────────────────
+[asciidoctor]
+experimental = ""
+
+; ─── All Markdown files ────────────────────────────────────────────────────────
+[*.md]
+BasedOnStyles = Vale, Microsoft
+Microsoft.Contractions = NO
+BlockIgnores = (?s)```.*?```
+TokenIgnores = (\*\*|__)(?:[^*_]|(?:\*\*|__))+(?:\*\*|__)
+
+; ─── All reStructuredText files ────────────────────────────────────────────────
+[*.rst]
+BasedOnStyles = Google
+BlockIgnores = (?s)\.\. code-block::.*?\n\n
+
+; ─── Plain text ────────────────────────────────────────────────────────────────
+[*.txt]
+BasedOnStyles = Vale
+```

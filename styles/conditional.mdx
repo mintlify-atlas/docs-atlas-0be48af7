@@ -1,0 +1,88 @@
+---
+title: "Conditional"
+description: "Require that if one term appears, another must also appear in the document."
+---
+
+The `conditional` extension point enforces an implication: if the pattern defined by `first` appears anywhere in a document, the pattern defined by `second` must also appear. Its most common use is ensuring that acronyms are expanded before (or alongside) their abbreviation.
+
+```yaml
+extends: conditional
+message: "'%s' has no definition. Define it on first use."
+level: error
+first: \b([A-Z]{3,5})\b
+second: (?:\b[A-Z][a-z]+ ){2,}\(([A-Z]{3,5})\)
+exceptions:
+  - API
+  - URL
+  - HTML
+```
+
+In this pattern, `second` is the consequent (the definition form), and `first` is the antecedent (the abbreviation). Vale collects all matches of `second` across the document, then checks every match of `first` against that set. If a `first` match is not present in the `second` collection, an alert is raised.
+
+## Parameters
+
+<ParamField path="first" type="string" required>
+  A regular expression for the term whose presence triggers the check — the antecedent. For example, an acronym like `\b[A-Z]{3,5}\b`.
+</ParamField>
+
+<ParamField path="second" type="string" required>
+  A regular expression for the term that must also appear somewhere in the document — the consequent. For example, the expanded form of an acronym: `(?:\b[A-Z][a-z]+\s+){2,}\([A-Z]{3,5}\)`.
+</ParamField>
+
+<ParamField path="ignorecase" type="boolean">
+  When `true`, matching is case-insensitive for both `first` and `second`. Defaults to `false`.
+</ParamField>
+
+<ParamField path="exceptions" type="string[]">
+  A list of literal strings or patterns that are excluded from the check. Matched `first` tokens listed here will not trigger an alert even if `second` is absent.
+</ParamField>
+
+<ParamField path="vocab" type="boolean">
+  When `true` (default), terms from the active Vale Vocabulary are automatically added to `exceptions`.
+</ParamField>
+
+## Examples
+
+### Require acronym definitions
+
+```yaml
+extends: conditional
+message: "'%s' is used but never defined. Spell it out in full on first use."
+level: error
+scope: text
+first: \b([A-Z]{3,5})\b
+second: (?:\b[A-Z][a-z]+ ){2,}\(([A-Z]{3,5})\)
+exceptions:
+  - API
+  - URL
+  - HTML
+  - CSS
+  - JSON
+  - REST
+```
+
+### Require a notice section when a certain term appears
+
+```yaml
+extends: conditional
+message: "Document uses 'deprecated' but has no 'Deprecation Notice' section."
+level: warning
+scope: text
+first: \bdeprecated\b
+second: '## Deprecation Notice'
+ignorecase: true
+```
+
+### Require a version number alongside a feature name
+
+```yaml
+extends: conditional
+message: "Feature '%s' is mentioned but no version is specified."
+level: suggestion
+first: \bDark Mode\b
+second: \bv\d+\.\d+\b
+```
+
+<Note>
+  The check is file-scoped. Vale accumulates all matches of `second` as it reads the document, so the definition can appear anywhere — before or after the `first` match. Only if it is completely absent does the rule trigger.
+</Note>

@@ -1,0 +1,125 @@
+---
+title: "Sequence"
+description: "Check for NLP part-of-speech token sequences in prose."
+---
+
+The `sequence` extension point uses a part-of-speech tagger to find specific patterns of words and grammatical tags. Unlike regex-based rules, it lets you match constructs like "adjective + noun" or "adverb + adjective" regardless of the actual words involved. The rule is always sentence-scoped.
+
+```yaml
+extends: sequence
+message: "Avoid '%s'. Consider a stronger word."
+level: suggestion
+tokens:
+  - pattern: \b(very|really|extremely)\b
+    tag: RB
+  - tag: JJ
+```
+
+## Parameters
+
+<ParamField path="tokens" type="NLPToken[]" required>
+  An ordered list of token descriptors defining the sequence to match. Each token descriptor can specify:
+
+  - `pattern` — a regular expression the word text must match
+  - `tag` — a part-of-speech tag the token must have (or a regex matching a tag)
+  - `skip` — number of optional intervening tokens allowed between this token and the next
+  - `negate` — when `true`, the token matches only when the tag/pattern does **not** match
+
+  Both `pattern` and `tag` can be combined in a single token entry.
+</ParamField>
+
+<ParamField path="ignorecase" type="boolean">
+  When `true`, pattern matching within tokens is case-insensitive. Defaults to `false`.
+</ParamField>
+
+### Token descriptor fields
+
+<ParamField path="tokens[].pattern" type="string">
+  A regular expression matched against the word text. If omitted, any word text is accepted for this position.
+</ParamField>
+
+<ParamField path="tokens[].tag" type="string">
+  A part-of-speech tag (or regex) to match. Vale uses Penn Treebank tags. Common tags include:
+
+  | Tag    | Meaning                  |
+  | ------ | ------------------------ |
+  | `NN`   | Noun, singular           |
+  | `NNS`  | Noun, plural             |
+  | `VB`   | Verb, base form          |
+  | `VBD`  | Verb, past tense         |
+  | `JJ`   | Adjective                |
+  | `RB`   | Adverb                   |
+  | `DT`   | Determiner               |
+  | `IN`   | Preposition              |
+  | `CC`   | Coordinating conjunction |
+</ParamField>
+
+<ParamField path="tokens[].skip" type="integer">
+  The number of optional tokens that may appear between the previous required token and this one. Useful for matching patterns where modifiers can intervene.
+</ParamField>
+
+<ParamField path="tokens[].negate" type="boolean">
+  When `true`, the token matches only when the specified `tag` or `pattern` does **not** match. Useful for excluding specific words from a broader pattern.
+</ParamField>
+
+## Examples
+
+### Flag intensifiers before adjectives
+
+```yaml
+extends: sequence
+message: "Avoid weak intensifiers like '%s'. Use a stronger adjective."
+level: suggestion
+tokens:
+  - pattern: \b(very|really|extremely|quite)\b
+    tag: RB
+  - tag: JJ
+```
+
+### Flag passive voice constructions
+
+```yaml
+extends: sequence
+message: "Passive voice: '%s'. Consider rewriting in active voice."
+level: suggestion
+tokens:
+  - tag: VBD|VBZ|VBP|VBN
+    pattern: \b(was|were|is|are|been)\b
+  - tag: VBN
+```
+
+### Flag split infinitives
+
+```yaml
+extends: sequence
+message: "Possible split infinitive: '%s'."
+level: suggestion
+tokens:
+  - pattern: \bto\b
+    tag: TO
+  - tag: RB
+    skip: 1
+  - tag: VB
+```
+
+### Exclude specific words with negate
+
+```yaml
+extends: sequence
+message: "Consider avoiding '%s'."
+level: suggestion
+tokens:
+  - tag: RB
+    negate: false
+  - pattern: \b(good|great|bad)\b
+    tag: JJ
+    negate: false
+```
+
+<Note>
+  The `sequence` extension point always operates at sentence scope. Setting `scope` to another value has no effect — Vale overrides it internally.
+</Note>
+
+<Tip>
+  The first token in the list with a non-empty `pattern` becomes the **anchor** of the search. Vale finds all anchor matches in the sentence text and then checks the surrounding tokens against the remaining entries in the list.
+</Tip>

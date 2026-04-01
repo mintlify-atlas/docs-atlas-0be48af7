@@ -1,0 +1,185 @@
+---
+title: "Editor integrations"
+description: "Use Vale directly in your editor for real-time prose linting as you write."
+---
+
+Vale integrates with all major editors, surfacing style and grammar alerts inline as you write. Every integration depends on a `.vale.ini` configuration file in your project root — without it, Vale has no rules to apply.
+
+<Note>
+  Make sure Vale is installed and a `.vale.ini` file exists at the root of your
+  project before configuring any editor integration.
+</Note>
+
+## Supported editors
+
+<CardGroup cols={2}>
+  <Card title="VS Code" icon="code" href="https://github.com/errata-ai/vale-vscode">
+    Official Vale extension for Visual Studio Code. Installs from the Extensions marketplace.
+  </Card>
+  <Card title="Neovim / Vim" icon="terminal" href="https://github.com/nvimtools/none-ls.nvim">
+    Via null-ls (none-ls) or nvim-lint. Configure Vale as a diagnostics source.
+  </Card>
+  <Card title="Emacs" icon="e" href="https://github.com/tpeacock19/flymake-vale">
+    Via flycheck-vale or flymake-vale. Drop-in linting backends for Emacs.
+  </Card>
+  <Card title="Sublime Text" icon="s" href="https://github.com/errata-ai/SubLinter-vale">
+    Via SublimeLinter-vale. Install through Package Control.
+  </Card>
+  <Card title="JetBrains IDEs" icon="j" href="https://plugins.jetbrains.com/plugin/19613-vale">
+    Available in the JetBrains Plugin Marketplace for IntelliJ IDEA, GoLand, and others.
+  </Card>
+  <Card title="Browser editors" icon="globe" href="#native-messaging-host">
+    Vale supports a native messaging host for browser-based editor integrations.
+  </Card>
+</CardGroup>
+
+---
+
+## VS Code
+
+The [Vale VSCode](https://github.com/errata-ai/vale-vscode) extension is the official integration. It automatically searches for a `.vale.ini` file starting from the open file and walking up the directory tree.
+
+**Installation:**
+
+1. Open VS Code and go to the **Extensions** panel (`Ctrl+Shift+X` / `Cmd+Shift+X`).
+2. Search for **Vale**.
+3. Install the extension published by `errata-ai`.
+4. Reload VS Code. Alerts appear inline in any file Vale is configured to check.
+
+<Tabs>
+  <Tab title="Workspace settings">
+    Override the path to the `vale` binary or `.vale.ini` in `.vscode/settings.json`:
+
+    ```json .vscode/settings.json
+    {
+      "vale.valeCLI.path": "/usr/local/bin/vale",
+      "vale.valeCLI.config": "${workspaceFolder}/.vale.ini"
+    }
+    ```
+  </Tab>
+  <Tab title="User settings">
+    Set a global binary path in your user `settings.json` if Vale is not on your `PATH`:
+
+    ```json settings.json
+    {
+      "vale.valeCLI.path": "/home/you/.local/bin/vale"
+    }
+    ```
+  </Tab>
+</Tabs>
+
+---
+
+## Neovim / Vim
+
+### null-ls (none-ls)
+
+Add Vale as a diagnostics source using [none-ls.nvim](https://github.com/nvimtools/none-ls.nvim):
+
+```lua init.lua
+local null_ls = require("null-ls")
+
+null_ls.setup({
+  sources = {
+    null_ls.builtins.diagnostics.vale,
+  },
+})
+```
+
+### nvim-lint
+
+Alternatively, use [nvim-lint](https://github.com/mfussenegger/nvim-lint):
+
+```lua init.lua
+require("lint").linters_by_ft = {
+  markdown = { "vale" },
+  text     = { "vale" },
+  rst      = { "vale" },
+}
+```
+
+<Tip>
+  Both integrations call the `vale` binary on the current file. Make sure the
+  binary is on your `PATH` and a `.vale.ini` is present in the project root.
+</Tip>
+
+---
+
+## Emacs
+
+### flymake-vale
+
+[flymake-vale](https://github.com/tpeacock19/flymake-vale) integrates Vale with Emacs's built-in Flymake backend:
+
+```elisp init.el
+(require 'flymake-vale)
+(add-hook 'find-file-hook #'flymake-vale-maybe-load)
+```
+
+### flycheck-vale
+
+For users of [Flycheck](https://www.flycheck.org/), install `flycheck-vale` and enable it:
+
+```elisp init.el
+(require 'flycheck-vale)
+(flycheck-vale-setup)
+```
+
+---
+
+## Sublime Text
+
+Install [SublimeLinter](https://packagecontrol.io/packages/SublimeLinter) and then [SublimeLinter-vale](https://github.com/errata-ai/SubLinter-vale) via Package Control:
+
+1. Open the Command Palette (`Ctrl+Shift+P` / `Cmd+Shift+P`).
+2. Run **Package Control: Install Package**.
+3. Search for **SublimeLinter-vale** and install it.
+
+Vale runs automatically on save for any file type configured in your `.vale.ini`.
+
+---
+
+## JetBrains IDEs
+
+Install the [Vale](https://plugins.jetbrains.com/plugin/19613-vale) plugin from the JetBrains Plugin Marketplace:
+
+1. Open **Settings → Plugins → Marketplace**.
+2. Search for **Vale** and install the plugin.
+3. Restart the IDE.
+4. Under **Settings → Tools → Vale**, set the path to the `vale` binary if it is not auto-detected.
+
+---
+
+## Native messaging host
+
+Vale includes a native messaging host (`vale-native`) that allows browser-based editors and extensions to communicate with the Vale binary running on your machine.
+
+### Install and uninstall
+
+```bash
+# Install the native host for Chrome
+vale host-install chrome
+
+# Install the native host for Firefox
+vale host-install firefox
+
+# Uninstall
+vale host-uninstall chrome
+vale host-uninstall firefox
+```
+
+### Check install location
+
+Use `vale ls-dirs` to see where Vale looks for the native host binary and other default paths:
+
+```bash
+vale ls-dirs
+```
+
+The output shows the default `StylesPath`, `.vale.ini` location, and the `vale-native` executable path.
+
+<Info>
+  The native messaging host is primarily used by browser-based writing tools
+  that need to invoke Vale on the client machine. Most editor users do not need
+  to install it.
+</Info>

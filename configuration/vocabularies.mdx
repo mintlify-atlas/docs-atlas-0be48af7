@@ -1,0 +1,158 @@
+---
+title: "Vocabularies"
+description: "Vocabularies let you define project-specific accepted and rejected terms that complement Vale's built-in spelling and terminology rules."
+---
+
+A **vocabulary** is a named directory of plain-text word lists that Vale loads alongside your styles. Use vocabularies to teach Vale your project's terminology — product names, abbreviations, technical jargon — without modifying any style files.
+
+## Directory structure
+
+Each vocabulary lives in a subdirectory of `StylesPath/config/vocabularies/`. The directory name is the vocabulary name you reference in `.vale.ini`.
+
+<Tree>
+  <Tree.Folder name="StylesPath/" defaultOpen>
+    <Tree.Folder name="config/" defaultOpen>
+      <Tree.Folder name="vocabularies/" defaultOpen>
+        <Tree.Folder name="MyProject/" defaultOpen>
+          <Tree.File name="accept.txt" />
+          <Tree.File name="reject.txt" />
+        </Tree.Folder>
+      </Tree.Folder>
+    </Tree.Folder>
+  </Tree.Folder>
+</Tree>
+
+Both `accept.txt` and `reject.txt` are optional. You can have a vocabulary with only one of them.
+
+## Setting up a vocabulary
+
+<Steps>
+  <Step title="Create the vocabulary directory">
+    Create a directory named after your vocabulary inside `StylesPath/config/vocabularies/`:
+
+    ```bash
+    mkdir -p .vale/styles/config/vocabularies/MyProject
+    ```
+  </Step>
+  <Step title="Add word lists">
+    Create `accept.txt` and/or `reject.txt` inside the directory. Add one term per line:
+
+    ```text accept.txt
+    # Product names
+    Vale
+    errata-ai
+
+    # Technical terms
+    linter
+    AsciiDoc
+    reStructuredText
+    ```
+
+    ```text reject.txt
+    # Terms to flag as errors
+    blacklist
+    whitelist
+    ```
+  </Step>
+  <Step title="Activate the vocabulary in .vale.ini">
+    Reference the vocabulary by name in your `.vale.ini`:
+
+    ```ini .vale.ini
+    StylesPath = .vale/styles
+    Vocab = MyProject
+    ```
+
+    To activate multiple vocabularies, separate names with commas:
+
+    ```ini
+    Vocab = MyProject, SharedTerms
+    ```
+  </Step>
+</Steps>
+
+## `accept.txt`
+
+Each line in `accept.txt` is a term Vale treats as correctly spelled. Entries interact with Vale's built-in rules in two ways:
+
+- **`Vale.Spelling`** — terms in `accept.txt` are added to the spell-check dictionary, so they never trigger spelling alerts.
+- **Substitution rules** — terms in `accept.txt` are exempted from substitution rules (like `Microsoft.Terms`) that might otherwise suggest a replacement.
+
+<Note>
+  Entries are **case-sensitive** by default. `AsciiDoc` and `asciidoc` are treated as two different terms. If you want a term accepted in any case, write it as a regex wrapped in `/`:
+
+  ```text
+  /[Aa]sciidoc/
+  /re[Ss]t/
+  ```
+</Note>
+
+Lines beginning with `# ` (hash followed by a space) are treated as comments and ignored.
+
+## `reject.txt`
+
+Each line in `reject.txt` is a term Vale flags as an error via the `Vale.Terms` built-in rule. Use `reject.txt` to enforce terminology preferences — for example, to flag deprecated product names or discouraged phrasing.
+
+```text reject.txt
+# Deprecated names
+acme-cli
+ACME CLI
+
+# Style violations
+utilize
+leverage
+```
+
+<Warning>
+  `Vale.Terms` must be active for `reject.txt` to have any effect. Include `Vale` in `BasedOnStyles` or enable `Vale.Terms` explicitly:
+
+  ```ini
+  [*.md]
+  BasedOnStyles = Vale, Microsoft
+  ```
+</Warning>
+
+## How vocabularies interact with built-in rules
+
+| Rule | `accept.txt` effect | `reject.txt` effect |
+|---|---|---|
+| `Vale.Spelling` | Accepted terms are never flagged as misspelled. | No effect. |
+| `Vale.Terms` | Accepted terms are exempt from substitution suggestions. | Rejected terms trigger an error. |
+| Third-party substitution rules | Accepted terms bypass substitution checks. | No effect. |
+
+## Example: full vocabulary setup
+
+```text accept.txt
+# Product names (exact case required)
+Vale
+errata-ai
+StylesPath
+
+# Abbreviations
+CLI
+YAML
+INI
+
+# Regex: accept both capitalizations
+/[Aa]sciidoc/
+```
+
+```text reject.txt
+# Enforce preferred terminology
+blacklist
+whitelist
+master branch
+utilize
+```
+
+```ini .vale.ini
+StylesPath = .vale/styles
+MinAlertLevel = suggestion
+Vocab = MyProject
+
+[*.md]
+BasedOnStyles = Vale, Microsoft
+```
+
+<Tip>
+  Keep vocabulary files in version control alongside your `.vale.ini`. This makes terminology decisions visible, reviewable, and consistent across your team.
+</Tip>

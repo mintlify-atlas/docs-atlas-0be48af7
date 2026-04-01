@@ -1,0 +1,88 @@
+---
+title: "Readability"
+description: "Apply readability formula scoring to prose and enforce a target grade level."
+---
+
+The `readability` extension point calculates one or more readability scores for a block of text and raises an alert when the average score exceeds the configured `grade` threshold. This is a document-level check: Vale always scopes it to `summary`, meaning the full document text is evaluated as a whole.
+
+```yaml
+extends: readability
+message: "The average reading level is %s. Aim for grade 8 or lower."
+level: suggestion
+metrics:
+  - Flesch-Kincaid
+  - Gunning Fog
+grade: 8
+```
+
+## Parameters
+
+<ParamField path="metrics" type="string[]" required>
+  One or more readability formulas to apply. The scores are averaged when multiple metrics are listed. Accepted values:
+
+  - `Flesch-Kincaid` — Flesch-Kincaid Grade Level
+  - `Coleman-Liau` — Coleman-Liau Index
+  - `Gunning Fog` — Gunning Fog Index
+  - `SMOG` — SMOG Grade
+  - `Automated Readability` — Automated Readability Index
+</ParamField>
+
+<ParamField path="grade" type="number" required>
+  The maximum acceptable grade-level score. An alert is raised when the computed score exceeds this value. Typical targets for technical documentation are between 8 and 12.
+</ParamField>
+
+## Readability metrics
+
+| Metric                  | What it measures                                         |
+| ----------------------- | -------------------------------------------------------- |
+| `Flesch-Kincaid`        | Grade level based on sentence length and syllable count  |
+| `Coleman-Liau`          | Grade level based on characters per word and sentence    |
+| `Gunning Fog`           | Grade level emphasizing complex (polysyllabic) words     |
+| `SMOG`                  | Grade level from polysyllabic word count                 |
+| `Automated Readability` | Grade level based on characters, words, and sentences    |
+
+## Examples
+
+### Single metric
+
+```yaml
+extends: readability
+message: "Flesch-Kincaid grade level is %s. Target is 8 or below."
+level: suggestion
+metrics:
+  - Flesch-Kincaid
+grade: 8
+```
+
+### Average of multiple metrics
+
+```yaml
+extends: readability
+message: "Average readability score is %s (target: ≤ 10). Simplify long sentences."
+level: warning
+metrics:
+  - Flesch-Kincaid
+  - Gunning Fog
+  - SMOG
+grade: 10
+```
+
+### Strict technical writing standard
+
+```yaml
+extends: readability
+message: "Document readability score is %s. Documentation should target grade 7."
+level: error
+metrics:
+  - Coleman-Liau
+  - Automated Readability
+grade: 7
+```
+
+<Warning>
+  The `readability` extension point does not support custom `scope` values. Vale always evaluates it against the document summary, not individual headings, paragraphs, or sentences.
+</Warning>
+
+<Tip>
+  When listing multiple `metrics`, Vale averages the scores before comparing against `grade`. Using metrics with similar scales gives more predictable results.
+</Tip>

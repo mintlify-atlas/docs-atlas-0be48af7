@@ -1,0 +1,114 @@
+---
+title: "Existence"
+description: "Flag the presence of specific tokens or phrases in your prose."
+---
+
+The `existence` extension point is the simplest rule type. It flags any text that matches a set of token patterns, with no suggested replacement. Use it to prohibit specific words, phrases, or regular expression patterns.
+
+```yaml
+extends: existence
+message: "Avoid using '%s'."
+level: warning
+tokens:
+  - simply
+  - obviously
+  - just
+```
+
+## Parameters
+
+<ParamField path="tokens" type="string[]">
+  A list of regular expression strings. Each token is wrapped in word boundaries (`\b`) by default before matching. Matches are flagged and the matched text is substituted into `%s` in `message`.
+</ParamField>
+
+<ParamField path="raw" type="string[]">
+  A list of regular expression strings appended to the compiled pattern as-is, without word boundaries. Use `raw` when you need full control over the expression, such as matching multi-word phrases or custom anchors.
+</ParamField>
+
+<ParamField path="exceptions" type="string[]">
+  A list of strings or patterns that are excluded from matching even when they would otherwise trigger the rule.
+</ParamField>
+
+<ParamField path="ignorecase" type="boolean">
+  When `true`, matching is case-insensitive. Defaults to `false`.
+</ParamField>
+
+<ParamField path="nonword" type="boolean">
+  When `true`, removes the default word boundary wrappers (`\b`) from `tokens`. Use this when matching patterns that include punctuation or other non-word characters.
+</ParamField>
+
+<ParamField path="append" type="boolean">
+  When `true`, the `raw` patterns are appended after the compiled `tokens` pattern. When `false` (default), they are prepended.
+</ParamField>
+
+<ParamField path="vocab" type="boolean">
+  When `true` (default), terms from the active Vale Vocabulary are automatically added to `exceptions`. Set to `false` to ignore Vocab entries for this rule.
+</ParamField>
+
+## Examples
+
+### Flag hedge words
+
+```yaml
+extends: existence
+message: "Avoid hedge words like '%s'."
+level: warning
+ignorecase: true
+tokens:
+  - simply
+  - obviously
+  - basically
+  - of course
+  - clearly
+  - just
+  - everyone knows
+```
+
+### Flag banned words using a word list
+
+```yaml
+extends: existence
+message: "'%s' is not allowed. Check the style guide for alternatives."
+level: error
+ignorecase: true
+tokens:
+  - utilize
+  - commence
+  - endeavour
+  - aforementioned
+```
+
+### Match patterns without word boundaries
+
+Use `nonword: true` when your pattern includes punctuation or spans across boundary characters.
+
+```yaml
+extends: existence
+message: "Found '%s'. Use an en dash (–) for ranges instead."
+level: warning
+nonword: true
+tokens:
+  - \b\d+\s*-\s*\d+\b
+```
+
+### Combine tokens and raw patterns
+
+`raw` patterns are inserted into the regex as-is. This is useful for lookahead/lookbehind assertions or complex alternations.
+
+```yaml
+extends: existence
+message: "Passive construction detected: '%s'."
+level: suggestion
+tokens:
+  - was
+  - were
+  - been
+  - being
+raw:
+  - \s+\w+ed\b
+append: true
+```
+
+<Note>
+  The `tokens` list is joined with `|` and wrapped as `(?m)\b(?:...)\b` before compiling. If any token is empty or contains only whitespace it is silently skipped.
+</Note>

@@ -1,0 +1,67 @@
+---
+title: "Introduction"
+description: "Vale is a markup-aware prose linter for technical writers. Bring code-like style enforcement to your documentation — fast, extensible, and dependency-free."
+---
+
+Vale is a command-line tool that brings code-like linting to prose. It's **fast**, **cross-platform** (Windows, macOS, and Linux), and **highly customizable** — letting you enforce any style guide, from major editorial standards to your own in-house rules.
+
+<CardGroup cols={2}>
+  <Card title="No runtime dependencies" icon="box">
+    A single standalone binary written in Go. No Python, Node.js, or JVM required.
+  </Card>
+  <Card title="Markup-aware" icon="code">
+    Parses Markdown, AsciiDoc, RST, HTML, DITA, Org, and MDX — so code blocks and syntax never trigger false positives.
+  </Card>
+  <Card title="Extensible rules" icon="sliders">
+    Define custom rules in YAML. Apply any editorial style guide or build your own from scratch.
+  </Card>
+  <Card title="CI-ready" icon="circle-check">
+    Outputs line-and-column results in CLI, JSON, or line format. Integrates with any pipeline.
+  </Card>
+  <Card title="Vocabulary support" icon="book">
+    Maintain project-specific word lists to accept or reject terms across all rules.
+  </Card>
+  <Card title="Scripting & spelling" icon="pen-nib">
+    Extend rules with Tengo scripts for complex logic, and run Hunspell-compatible spell checking.
+  </Card>
+</CardGroup>
+
+## Key features
+
+- **Markup support**: Vale understands Markdown, AsciiDoc, reStructuredText, HTML, DITA, Org, MDX, and plain text at a structural level — not just as raw strings.
+- **Extensible YAML rule system**: Author style rules using 12 built-in extension points (existence, substitution, capitalization, spelling, and more) without writing any code.
+- **Standalone binary**: Download and run immediately. No package manager or language runtime needed.
+- **Cross-platform**: Native builds for Windows, macOS (Intel and Apple Silicon), and Linux (amd64 and arm64).
+- **Vocabulary management**: Define accepted and rejected word lists per project to keep terminology consistent.
+- **Tengo scripting**: Write script-based rules using the Tengo language for logic that YAML alone can't express.
+- **Hunspell spelling**: Drop in standard Hunspell dictionaries for accurate, locale-aware spell checking.
+- **CI-ready output**: Choose from CLI, JSON, or line-based output to slot into any automation workflow.
+
+## Vale vs. other tools
+
+All tools in the table below are open-source, CLI-based prose linters. Implementations and feature sets vary significantly.
+
+| Tool | Extensible | Checks | Supports markup | Built with | License |
+|------|------------|--------|-----------------|------------|---------|
+| **Vale** | Yes (YAML) | spelling, style | Yes (Markdown, AsciiDoc, RST, HTML, XML, Org) | Go | MIT |
+| textlint | Yes (JavaScript) | spelling, style | Yes (Markdown, AsciiDoc, RST, HTML, Re:VIEW) | JavaScript | MIT |
+| RedPen | Yes (Java) | spelling, style | Yes (Markdown, AsciiDoc, RST, Textile, Re:VIEW, LaTeX) | Java | Apache-2.0 |
+| write-good | Yes (JavaScript) | style | No | JavaScript | MIT |
+| proselint | No | style | No | Python | BSD 3-Clause |
+| Joblint | No | style | No | JavaScript | MIT |
+| alex | No | style | Yes (Markdown only) | JavaScript | MIT |
+
+"Supports markup" means the format is understood structurally — for example, code blocks are excluded from spell check rather than treated as plain text.
+
+"Extensible" means there is a built-in way to write custom rules without modifying the tool's source code.
+
+## Get started
+
+<CardGroup cols={2}>
+  <Card title="Install Vale" icon="download" href="/installation">
+    Install Vale on macOS, Windows, Linux, or Docker — no dependencies required.
+  </Card>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Create a config file, sync a style package, and lint your first document.
+  </Card>
+</CardGroup>

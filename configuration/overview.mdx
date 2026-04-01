@@ -1,0 +1,94 @@
+---
+title: "Configuration overview"
+description: "Vale is configured through two layers: CLI flags for runtime options and a .vale.ini file for project-wide settings."
+---
+
+Vale's configuration system has two distinct layers:
+
+- **CLI flags** — passed at runtime to override behavior for a single invocation (e.g., `--minAlertLevel=error`, `--glob='*.md'`).
+- **`.vale.ini`** — a project-level INI file that defines styles, vocabularies, scoping rules, and format mappings. This is the primary way to configure Vale for a project.
+
+## Config file search
+
+When you run Vale without specifying a config file, it walks up the directory tree from the target path looking for a file with one of these names, in order:
+
+1. `.vale.ini`
+2. `_vale.ini`
+3. `vale.ini`
+4. `_vale`
+5. `.vale`
+
+<Note>
+  Vale v3 standardized on `.vale.ini` as the canonical config file name. The other names remain supported for backwards compatibility, but `.vale.ini` is the recommended choice for all new projects.
+</Note>
+
+You can bypass the search entirely by pointing Vale at a specific file:
+
+```bash
+vale --config='/path/to/.vale.ini' docs/
+```
+
+## Environment variables
+
+Two environment variables influence how Vale locates its configuration:
+
+| Variable | Description |
+|---|---|
+| `VALE_CONFIG_PATH` | Override the default search process by specifying a `.vale.ini` file path directly. |
+| `VALE_STYLES_PATH` | Specify the location of the default `StylesPath`, used when no project config defines one. |
+
+## Global config
+
+Vale supports a global configuration file at the XDG config path:
+
+```
+~/.config/vale/.vale.ini   # Linux / macOS
+%APPDATA%\vale\.vale.ini   # Windows
+```
+
+When a project-level `.vale.ini` is also present, both files are loaded. Project-level settings take precedence. You can suppress global config loading with `--no-global`.
+
+## StylesPath directory structure
+
+The `StylesPath` directory is where Vale looks for styles, vocabularies, and other assets. Within it, Vale expects the following layout under a `config/` subdirectory:
+
+<Tree>
+  <Tree.Folder name="StylesPath/" defaultOpen>
+    <Tree.Folder name="MyStyle/" />
+    <Tree.Folder name="config/" defaultOpen>
+      <Tree.Folder name="vocabularies/" />
+      <Tree.Folder name="dictionaries/" />
+      <Tree.Folder name="templates/" />
+      <Tree.Folder name="ignore/" />
+      <Tree.Folder name="actions/" />
+      <Tree.Folder name="scripts/" />
+      <Tree.Folder name="filters/" />
+      <Tree.Folder name="views/" />
+    </Tree.Folder>
+  </Tree.Folder>
+</Tree>
+
+| Directory | Purpose |
+|---|---|
+| `config/vocabularies/` | Project-specific accepted and rejected terms |
+| `config/dictionaries/` | Custom spelling dictionaries |
+| `config/templates/` | Output templates |
+| `config/ignore/` | Ignore files (`.txt` patterns) |
+| `config/actions/` | Custom rule actions |
+| `config/scripts/` | Scripted rules (Tengo) |
+| `config/filters/` | Custom document filters |
+| `config/views/` | Custom output views (YAML) |
+
+## Configuration topics
+
+<Columns cols={3}>
+  <Card title="The .vale.ini file" icon="file-lines" href="/configuration/ini-file">
+    All global and section-level keys, with a complete working example.
+  </Card>
+  <Card title="Scoping" icon="crosshairs" href="/configuration/scoping">
+    Control which files Vale lints and which parts of each document rules apply to.
+  </Card>
+  <Card title="Vocabularies" icon="book" href="/configuration/vocabularies">
+    Define project-specific accepted and rejected terms to complement spelling rules.
+  </Card>
+</Columns>

@@ -1,0 +1,184 @@
+---
+title: "Packages & Style Hub"
+description: "Install pre-built style rule collections with vale sync and browse the Vale Package Hub."
+---
+
+Vale packages are pre-built collections of style rules that you download into your project's `StylesPath`. Instead of writing rules from scratch, you add a package name to `.vale.ini` and run `vale sync` — Vale fetches and unpacks the package automatically.
+
+The [Vale Package Hub](https://vale.sh/hub) lists all publicly available packages.
+
+---
+
+## Install a package
+
+<Steps>
+  <Step title="Add packages to .vale.ini">
+    Open your `.vale.ini` file and add the package names to the `Packages` key in the root section. Multiple packages are comma-separated:
+
+    ```ini .vale.ini
+    StylesPath = .vale/styles
+
+    Packages = Microsoft, Google, Readability
+
+    [*.md]
+    BasedOnStyles = Vale, Microsoft
+    ```
+  </Step>
+
+  <Step title="Run vale sync">
+    Download and install all listed packages into your `StylesPath`:
+
+    ```bash
+    vale sync
+    ```
+
+    Vale shows a progress bar as it fetches each package and unpacks it into a subdirectory of `StylesPath`.
+  </Step>
+
+  <Step title="Add the style to BasedOnStyles">
+    Update the `BasedOnStyles` key in the relevant file-type section to activate the rules:
+
+    ```ini .vale.ini
+    StylesPath = .vale/styles
+
+    Packages = Microsoft, Google, Readability
+
+    [*.md]
+    BasedOnStyles = Vale, Microsoft, Google
+    ```
+
+    Run `vale sync` again any time you add or change package entries.
+  </Step>
+</Steps>
+
+---
+
+## Popular packages
+
+<CardGroup cols={2}>
+  <Card title="Microsoft" icon="book-open" href="https://vale.sh/hub/Microsoft">
+    Rules based on the Microsoft Writing Style Guide. Covers tone, terminology, and formatting conventions.
+  </Card>
+  <Card title="Google" icon="book-open" href="https://vale.sh/hub/Google">
+    Rules based on the Google Developer Documentation Style Guide. Covers word choice, punctuation, and clarity.
+  </Card>
+  <Card title="Readability" icon="chart-bar" href="https://vale.sh/hub/Readability">
+    Computes readability metrics including Flesch-Kincaid grade level, Gunning Fog, and others.
+  </Card>
+  <Card title="write-good" icon="pen" href="https://vale.sh/hub/write-good">
+    Port of the write-good linter. Flags passive voice, weasel words, and other weak phrasing.
+  </Card>
+  <Card title="proselint" icon="magnifying-glass" href="https://vale.sh/hub/proselint">
+    Port of the proselint linter. Covers a broad set of style, logic, and usage checks.
+  </Card>
+  <Card title="Joblint" icon="briefcase" href="https://vale.sh/hub/Joblint">
+    Port of the Joblint linter. Flags problematic language in job postings and HR content.
+  </Card>
+  <Card title="alex" icon="shield" href="https://vale.sh/hub/alex">
+    Port of the alex linter. Catches insensitive or inconsiderate writing.
+  </Card>
+</CardGroup>
+
+---
+
+## StylesPath layout after sync
+
+After running `vale sync`, your `StylesPath` directory contains one subdirectory per installed package:
+
+```
+.vale/styles/
+├── Microsoft/
+│   ├── Acronyms.yml
+│   ├── Contractions.yml
+│   └── ...
+├── Google/
+│   ├── Colons.yml
+│   ├── Headings.yml
+│   └── ...
+├── Readability/
+│   └── FleschKincaid.yml
+└── config/
+    ├── vocabularies/
+    ├── dictionaries/
+    └── ...
+```
+
+Each style directory holds `.yml` rule files. The `config/` directory is Vale's reserved space for vocabularies, dictionaries, templates, and other configuration assets.
+
+---
+
+## Example: multiple packages
+
+```ini .vale.ini
+StylesPath = .vale/styles
+
+MinAlertLevel = suggestion
+
+Packages = Microsoft, write-good, alex
+
+[*.{md,mdx}]
+BasedOnStyles = Vale, Microsoft, write-good, alex
+
+[*.txt]
+BasedOnStyles = Vale, write-good
+```
+
+<Tip>
+  Commit your `.vale.ini` but add `.vale/styles/` to `.gitignore`. Team members
+  and CI pipelines each run `vale sync` to install packages locally, keeping
+  the repository free of vendored rule files.
+</Tip>
+
+---
+
+## Create and share your own package
+
+A Vale package is either a GitHub repository or a `.zip` archive that follows the Vale package layout: a top-level directory containing style subdirectories and/or a `config/` directory.
+
+**GitHub repository format:**
+
+```
+my-style/
+├── MyStyle/
+│   ├── Rule1.yml
+│   └── Rule2.yml
+└── config/
+    └── vocabularies/
+        └── MyVocab/
+            └── accept.txt
+```
+
+Reference your package in `.vale.ini` by its GitHub URL:
+
+```ini .vale.ini
+Packages = https://github.com/your-org/my-style/archive/refs/heads/main.zip
+```
+
+**Local or private packages:**
+
+Use a file path to reference a local `.zip` archive:
+
+```ini .vale.ini
+Packages = /path/to/my-private-package.zip
+```
+
+<Note>
+  To publish your package to the Vale Package Hub, follow the submission
+  guidelines at <a href="https://vale.sh/hub">vale.sh/hub</a>.
+</Note>
+
+---
+
+## Environment variables
+
+Two environment variables let you override where Vale looks for configuration and styles, which is useful in CI or monorepo setups:
+
+| Variable | Description |
+|----------|-------------|
+| `VALE_CONFIG_PATH` | Override the default search process by pointing directly to a `.vale.ini` file. |
+| `VALE_STYLES_PATH` | Specify a custom location for the default `StylesPath`. |
+
+```bash
+VALE_CONFIG_PATH=/shared/.vale.ini vale sync
+VALE_STYLES_PATH=/shared/styles vale docs/
+```

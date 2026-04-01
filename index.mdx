@@ -1,97 +1,96 @@
 ---
-title: "Introduction"
-description: "Welcome to the new home for your documentation"
+title: "Vale — Prose Linting for Technical Writers"
+description: "A markup-aware linter that brings code-like style enforcement to your documentation. Fast, extensible, and runs everywhere."
 ---
 
-## Setting up
+Vale is a command-line tool that brings code-like linting to prose. It's **fast**, **cross-platform** (Windows, macOS, and Linux), and **highly customizable** — letting you enforce any style guide, from major editorial standards to your own in-house rules.
 
-Get your documentation site up and running in minutes.
-
-<Card
-  title="Start here"
-  icon="rocket"
-  href="/quickstart"
-  horizontal
->
-  Follow our three step quickstart guide.
-</Card>
-
-## Make it yours
-
-Design a docs site that looks great and empowers your users.
-
-<Columns cols={2}>
-  <Card
-    title="Edit locally"
-    icon="pen-to-square"
-    href="/development"
-  >
-    Edit your docs locally and preview them in real time.
+<CardGroup cols={2}>
+  <Card title="Install Vale" icon="download" href="/installation">
+    Get Vale running on your machine in minutes — no runtime dependencies required.
   </Card>
-  <Card
-    title="Customize your site"
-    icon="palette"
-    href="/essentials/settings"
-  >
-    Customize the design and colors of your site to match your brand.
+  <Card title="Quick Start" icon="rocket" href="/quickstart">
+    Write your first `.vale.ini` config and lint a document end-to-end.
   </Card>
-    <Card
-    title="Set up navigation"
-    icon="map"
-    href="/essentials/navigation"
-  >
-    Organize your docs to help users find what they need and succeed with your product.
+  <Card title="Configuration" icon="sliders" href="/configuration/overview">
+    Learn how to configure Vale using `.vale.ini` files and style paths.
   </Card>
-  <Card
-    title="API documentation"
-    icon="terminal"
-    href="/api-reference/introduction"
-  >
-    Auto-generate API documentation from OpenAPI specifications.
+  <Card title="Styles & Rules" icon="pen-nib" href="/styles/overview">
+    Author custom rules using Vale's 12 built-in YAML extension points.
   </Card>
-</Columns>
+  <Card title="Integrations" icon="plug" href="/integrations/editors">
+    Connect Vale to your editor, CI/CD pipeline, or package hub.
+  </Card>
+  <Card title="CLI Reference" icon="terminal" href="/reference/commands">
+    Full reference for every Vale command and flag.
+  </Card>
+</CardGroup>
 
-## Create beautiful pages
+## Why Vale?
 
-Everything you need to create world-class documentation.
+Vale understands **markup** — it doesn't just scan raw text. It parses Markdown, AsciiDoc, reStructuredText, HTML, DITA, and more, so it avoids false positives inside code blocks, headings, and other structural elements.
 
-<Columns cols={2}>
-  <Card
-    title="Write with MDX"
-    icon="pen-fancy"
-    href="/essentials/markdown"
-  >
-    Use MDX to style your docs pages.
+<CardGroup cols={3}>
+  <Card title="No runtime dependencies" icon="box">
+    A single standalone binary. No Python, Node.js, or JVM required.
   </Card>
-  <Card
-    title="Code samples"
-    icon="code"
-    href="/essentials/code"
-  >
-    Add sample code to demonstrate how to use your product.
+  <Card title="Bring your style guide" icon="book">
+    Enforce Microsoft, Google, or your own in-house editorial rules via YAML.
   </Card>
-  <Card
-    title="Images"
-    icon="image"
-    href="/essentials/images"
-  >
-    Display images and other media.
+  <Card title="Blazing fast" icon="bolt">
+    Written in Go. Benchmarks show Vale outperforms comparable prose linters by a wide margin.
   </Card>
-  <Card
-    title="Reusable snippets"
-    icon="recycle"
-    href="/essentials/reusable-snippets"
-  >
-    Write once and reuse across your docs.
-  </Card>
-</Columns>
+</CardGroup>
 
-## Need inspiration?
+## Get started in three steps
 
-<Card
-  title="See complete examples"
-  icon="stars"
-  href="https://mintlify.com/customers"
->
-  Browse our showcase of exceptional documentation sites.
-</Card>
+<Steps>
+  <Step title="Install Vale">
+    Download the binary for your platform via Homebrew, Chocolatey, or direct download:
+
+    ```bash
+    brew install vale
+    ```
+  </Step>
+  <Step title="Create a configuration file">
+    Add a `.vale.ini` to your project root:
+
+    ```ini .vale.ini
+    StylesPath = .vale/styles
+
+    MinAlertLevel = suggestion
+
+    Packages = Microsoft
+
+    [*.md]
+    BasedOnStyles = Vale, Microsoft
+    ```
+  </Step>
+  <Step title="Sync and lint">
+    Download your style packages and run Vale on your docs:
+
+    ```bash
+    vale sync
+    vale docs/
+    ```
+  </Step>
+</Steps>
+
+## Supported formats
+
+Vale understands structure across many formats, applying rules only where they make sense:
+
+| Format | Extensions |
+|--------|------------|
+| Markdown | `.md`, `.mdown`, `.markdown`, `.markdn` |
+| AsciiDoc | `.adoc`, `.asciidoc`, `.asc` |
+| reStructuredText | `.rst`, `.rest` |
+| HTML | `.html`, `.htm`, `.shtml`, `.xhtml` |
+| DITA | `.dita` |
+| Org | `.org` |
+| MDX | `.mdx` |
+| Plain text | `.txt` |
+
+<Note>
+  Vale also lints prose inside source code comments for Go, Python, JavaScript, TypeScript, Ruby, Rust, and many more languages.
+</Note>

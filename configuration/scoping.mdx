@@ -1,0 +1,202 @@
+---
+title: "Scoping"
+description: "Vale applies rules only to specific scopes within each document. Scoping controls which files are linted and which parts of those files rules run against."
+---
+
+Vale is markup-aware: it parses documents structurally and applies rules only to prose regions, not to code fences, headings you've excluded, or HTML tags you've listed as ignored. This is called **scoping**.
+
+There are three levels at which you can control scope:
+
+1. **File-level** — which files Vale processes, controlled by globs.
+2. **Block-level** — which regions inside a file are excluded, controlled by `BlockIgnores` and `SkippedScopes`.
+3. **Token-level** — which inline spans are stripped before rules run, controlled by `TokenIgnores` and `IgnoredScopes`.
+
+## Supported formats
+
+Vale identifies the format of a file from its extension and routes it through the appropriate parser.
+
+### Markup formats
+
+Rules apply to prose content. Structural elements like code blocks and headings are separated into their own scopes, so a typography rule doesn't fire inside a fenced code block.
+
+| Extensions | Format |
+|---|---|
+| `.md`, `.mdown`, `.markdown`, `.markdn` | Markdown |
+| `.mdx` | MDX |
+| `.adoc`, `.asciidoc`, `.asc` | AsciiDoc |
+| `.rst`, `.rest` | reStructuredText |
+| `.html`, `.htm`, `.shtml`, `.xhtml` | HTML |
+| `.dita` | DITA |
+| `.org` | Org-mode |
+| `.xml`, `.xsd` | XML |
+
+### Code formats
+
+Vale lints only comment regions (inline comments and block comments). The code itself is ignored.
+
+| Extensions | Language |
+|---|---|
+| `.go` | Go |
+| `.py`, `.pyw`, `.py3` | Python |
+| `.js`, `.jsx` | JavaScript |
+| `.ts`, `.tsx` | TypeScript |
+| `.rb`, `Gemfile`, `Rakefile` | Ruby |
+| `.rs` | Rust |
+| `.c`, `.cpp`, `.cc`, `.h`, `.hpp` | C / C++ |
+| `.java`, `.bsh` | Java |
+| `.cs`, `.csx` | C# |
+| `.php` | PHP |
+| `.scala`, `.sbt` | Scala |
+| `.swift` | Swift |
+| `.lua` | Lua |
+| `.hs` | Haskell |
+| `.ps1`, `.psm1`, `.psd1` | PowerShell |
+| `.clj`, `.cljs`, `.cljc` | Clojure |
+| `.r`, `.R` | R |
+| `.pl`, `.pm`, `.pod` | Perl |
+| `.jl` | Julia |
+| `.proto` | Protocol Buffers |
+| `.css`, `.sass`, `.less` | CSS / Sass / Less |
+
+### Text formats
+
+| Extensions | Notes |
+|---|---|
+| `.txt` | Linted line-by-line with no structural parsing. |
+
+### Data formats
+
+Vale can lint prose embedded in data files when you map them to a markup format via the `[formats]` section.
+
+| Extensions | Default behavior |
+|---|---|
+| `.yaml`, `.yml` | Linted as plain text unless remapped. |
+| `.json` | Linted as plain text unless remapped. |
+| `.toml` | Linted as plain text unless remapped. |
+
+## File-level scoping with globs
+
+Section headers in `.vale.ini` are glob patterns that select which files a set of styles applies to:
+
+```ini
+[*.md]
+BasedOnStyles = Vale, Microsoft
+
+[*.{md,txt}]
+BasedOnStyles = Vale
+
+[docs/**/*.rst]
+BasedOnStyles = Google
+```
+
+Patterns follow standard Unix glob syntax. Vale evaluates each section header against the file path and applies all matching sections. When multiple sections match, settings are merged with the more specific (later-defined) section winning for conflicting scalar values.
+
+### `--glob` flag
+
+You can override which files Vale processes at runtime without changing `.vale.ini`:
+
+```bash
+# Lint only Markdown files
+vale --glob='*.md' docs/
+
+# Lint Markdown and reStructuredText
+vale --glob='*.{md,rst}' docs/
+
+# Lint everything except generated files
+vale --glob='!**/generated/**' docs/
+```
+
+## Ignoring blocks
+
+### `BlockIgnores`
+
+`BlockIgnores` accepts a list of regular expressions. Any region that matches is removed from the document before rules run. This is useful for multi-line constructs that span block boundaries.
+
+```ini
+[*.md]
+; Skip fenced code blocks
+BlockIgnores = (?s)```.*?```
+
+; Skip Jekyll front matter
+BlockIgnores = (?s)---.*?---
+```
+
+Multiple patterns can be listed with commas:
+
+```ini
+[*.md]
+BlockIgnores = (?s)```.*?```, (?s)~~~.*?~~~
+```
+
+### `SkippedScopes`
+
+`SkippedScopes` is a global option that names HTML block-level tags to skip entirely when Vale processes HTML-based formats (HTML, Markdown rendered to HTML, etc.):
+
+```ini
+SkippedScopes = script, style, pre, figure
+```
+
+The entire element and its descendants are excluded.
+
+## Ignoring inline tokens
+
+### `TokenIgnores`
+
+`TokenIgnores` strips inline spans matching a regex before rules run. Use it to suppress false positives from markup syntax that survives into the prose layer.
+
+```ini
+[*.md]
+; Ignore bold/italic markers
+TokenIgnores = (\*\*|__)(?:[^*_]|(?:\*\*|__))+(?:\*\*|__)
+
+; Ignore inline code
+TokenIgnores = `[^`]+`
+```
+
+### `IgnoredScopes`
+
+`IgnoredScopes` is a global option listing HTML inline tags whose text content Vale ignores:
+
+```ini
+IgnoredScopes = code, tt, kbd, math
+```
+
+## Linting without structural parsing
+
+Pass `--ignore-syntax` to disable format detection and lint every file line-by-line as plain text. This is useful for formats Vale doesn't natively support:
+
+```bash
+vale --ignore-syntax --glob='*.mdx' docs/
+```
+
+<Warning>
+  `--ignore-syntax` disables all markup-aware behavior. Rules that rely on document structure (such as heading-level checks) will not work correctly in this mode.
+</Warning>
+
+## Combining scoping rules
+
+The following example shows all three scoping layers working together:
+
+```ini .vale.ini
+StylesPath = .vale/styles
+MinAlertLevel = suggestion
+
+; Global: skip these HTML tags everywhere
+IgnoredScopes = code, tt, kbd
+SkippedScopes = script, style, pre
+
+; Markdown files: apply styles and suppress noisy patterns
+[*.md]
+BasedOnStyles = Vale, Microsoft
+BlockIgnores = (?s)```.*?```, (?s)<details>.*?</details>
+TokenIgnores = `[^`]+`, (\*\*|__)(?:[^*_])+(?:\*\*|__)
+
+; reStructuredText: different styles, skip code-block directives
+[*.rst]
+BasedOnStyles = Google
+BlockIgnores = (?s)\.\. code-block::.*?\n\n
+
+; Plain text: just spelling
+[*.txt]
+BasedOnStyles = Vale
+```

@@ -1,0 +1,167 @@
+---
+title: "Installation"
+description: "Install Vale on macOS, Windows, Linux, or Docker. Vale is a single standalone binary with no runtime dependencies."
+---
+
+Vale is distributed as a standalone binary. Pick the method that fits your platform and workflow.
+
+<Tabs>
+  <Tab title="macOS">
+    **Homebrew** is the recommended way to install Vale on macOS.
+
+    ```bash
+    brew install vale
+    ```
+
+    Homebrew installs Vale and keeps it up to date with `brew upgrade vale`.
+  </Tab>
+  <Tab title="Windows">
+    Vale is available on both **Chocolatey** and **Scoop**.
+
+    **Chocolatey**
+
+    ```powershell
+    choco install vale
+    ```
+
+    **Scoop**
+
+    ```powershell
+    scoop install vale
+    ```
+
+    Both package managers place `vale.exe` on your `PATH` automatically.
+  </Tab>
+  <Tab title="Linux">
+    **Homebrew on Linux** (Linuxbrew) is the quickest path:
+
+    ```bash
+    brew install vale
+    ```
+
+    Alternatively, download a binary directly from GitHub Releases — see the [Manual download](#manual-download) section below.
+  </Tab>
+  <Tab title="Docker">
+    The official Docker image is published at `jdkato/vale`.
+
+    **Pull the image**
+
+    ```bash
+    docker pull jdkato/vale
+    ```
+
+    **Lint a local directory**
+
+    Mount your project into the container and pass arguments as you would to the binary:
+
+    ```bash
+    docker run --rm -v "$(pwd):/docs" jdkato/vale /docs
+    ```
+
+    **Lint a single file**
+
+    ```bash
+    docker run --rm -v "$(pwd):/docs" jdkato/vale /docs/README.md
+    ```
+
+    The Docker image includes `asciidoctor`, `py3-docutils`, `nodejs`, and `mdx2vast` so all supported markup formats work out of the box.
+
+    <Note>
+      When mounting volumes on Windows, replace `$(pwd)` with `%cd%` in Command Prompt or `${PWD}` in PowerShell.
+    </Note>
+  </Tab>
+</Tabs>
+
+## Manual download
+
+You can download pre-built binaries directly from the [GitHub Releases](https://github.com/errata-ai/vale/releases) page.
+
+Archives follow this naming pattern:
+
+```
+vale_<VERSION>_<OS>_<ARCH>.<EXT>
+```
+
+For example:
+- `vale_3.0.0_macOS_arm64.tar.gz` — macOS Apple Silicon
+- `vale_3.0.0_macOS_64-bit.tar.gz` — macOS Intel
+- `vale_3.0.0_Linux_64-bit.tar.gz` — Linux amd64
+- `vale_3.0.0_Windows_64-bit.zip` — Windows amd64
+
+<Steps>
+  <Step title="Download the archive">
+    Go to the [releases page](https://github.com/errata-ai/vale/releases) and download the archive for your platform and architecture.
+  </Step>
+  <Step title="Extract the binary">
+    **macOS / Linux**
+
+    ```bash
+    tar -xzf vale_<VERSION>_<OS>_<ARCH>.tar.gz
+    ```
+
+    **Windows**
+
+    Unzip the `.zip` archive using File Explorer or your preferred tool.
+  </Step>
+  <Step title="Move the binary to your PATH">
+    **macOS / Linux**
+
+    ```bash
+    mv vale /usr/local/bin/vale
+    ```
+
+    **Windows**
+
+    Move `vale.exe` to a directory that is listed in your `%PATH%` environment variable, such as `C:\Windows\System32`, or add its location to `%PATH%`.
+  </Step>
+  <Step title="Verify the installation">
+    ```bash
+    vale --version
+    ```
+
+    You should see output like:
+
+    ```
+    vale version 3.x.x
+    ```
+  </Step>
+</Steps>
+
+## Pre-commit hook
+
+Vale can run as a [pre-commit](https://pre-commit.com) hook. Add the following to your `.pre-commit-config.yaml`:
+
+```yaml .pre-commit-config.yaml
+repos:
+  - repo: https://github.com/errata-ai/vale
+    rev: v3.x.x  # replace with a specific release tag
+    hooks:
+      - id: vale
+```
+
+The hook runs `vale` on all text files staged for commit. Update `rev` to pin a specific Vale release.
+
+<Tip>
+  Run `pre-commit autoupdate` to automatically update the `rev` to the latest release tag.
+</Tip>
+
+## Verify your installation
+
+After installing Vale by any method, confirm it is on your `PATH`:
+
+```bash
+vale --version
+```
+
+You should see the installed version printed to stdout.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/quickstart">
+    Create your first `.vale.ini` config and lint a document.
+  </Card>
+  <Card title="Configuration" icon="sliders" href="/configuration/overview">
+    Learn how to configure Vale for your project.
+  </Card>
+</CardGroup>

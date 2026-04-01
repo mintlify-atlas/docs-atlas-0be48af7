@@ -1,0 +1,198 @@
+---
+title: "FAQ"
+description: "Answers to common questions about Vale's behavior, configuration, and usage."
+---
+
+<AccordionGroup>
+
+  <Accordion title="Why isn't Vale finding my .vale.ini?">
+
+Vale searches for a config file by walking up the directory tree from the path you are linting. It checks each directory for a file with one of these names, in order:
+
+1. `.vale.ini`
+2. `_vale.ini`
+3. `vale.ini`
+4. `_vale`
+5. `.vale`
+
+If none is found in the directory tree, Vale falls back to the global config at the XDG config path (`~/.config/vale/.vale.ini` on Linux and macOS, `%APPDATA%\vale\.vale.ini` on Windows).
+
+**Common causes and fixes:**
+
+- The file exists but has a different name — rename it to `.vale.ini`.
+- Vale is being run from a directory above where the file lives — run Vale from the project root, or use `--config`.
+- The global config does not exist either — create one or point Vale at your file explicitly:
+
+  ```bash
+  vale --config='/path/to/.vale.ini' docs/
+  ```
+
+- Set `VALE_CONFIG_PATH` to override the search globally:
+
+  ```bash
+  export VALE_CONFIG_PATH=/path/to/.vale.ini
+  vale docs/
+  ```
+
+Run `vale ls-dirs` to see exactly where Vale is looking for its config file on your system.
+
+  </Accordion>
+
+  <Accordion title="How do I lint a string of text without a file?">
+
+Pass the text as a quoted argument:
+
+```bash
+vale "Check this sentence."
+```
+
+Vale sees that the argument is not a path to an existing file or directory and lints it as inline text. Use `--ext` to tell Vale which format to apply so that markup-aware rules and `.vale.ini` section globs work correctly:
+
+```bash
+vale --ext=.md "Check this _Markdown_ sentence."
+vale --ext=.rst "Check this reStructuredText text."
+```
+
+You can also pipe text via stdin:
+
+```bash
+echo "Check this sentence." | vale --ext=.md
+```
+
+  </Accordion>
+
+  <Accordion title="Why are my alerts not showing up?">
+
+Check these three things in order:
+
+**1. `MinAlertLevel`**
+
+Alerts below the minimum level are silently suppressed. If `MinAlertLevel = error` in your `.vale.ini`, you will not see `warning` or `suggestion` alerts. Lower the level or use `--minAlertLevel=suggestion` at the command line.
+
+**2. `BasedOnStyles`**
+
+A style must be listed under `BasedOnStyles` in the relevant section to be active. For example:
+
+```ini
+[*.md]
+BasedOnStyles = Vale, write-good
+```
+
+If a style is installed in `StylesPath` but not listed here, none of its rules run.
+
+**3. Section glob matching**
+
+The file extension must match a section header glob. A `.vale.ini` with only a `[*.md]` section will not lint `.txt` files.
+
+Run `vale ls-config` to see the fully resolved configuration and confirm that your styles, level, and section globs are set as expected.
+
+  </Accordion>
+
+  <Accordion title="How do I ignore a specific rule violation inline?">
+
+Use Vale's comment-based ignore syntax to suppress alerts within a block of text.
+
+**Disable a single rule:**
+
+```markdown
+<!-- vale StyleName.RuleName = NO -->
+
+This text ignores the StyleName.RuleName rule.
+
+<!-- vale StyleName.RuleName = YES -->
+```
+
+**Disable all rules:**
+
+```markdown
+<!-- vale off -->
+
+Vale does not lint anything here.
+
+<!-- vale on -->
+```
+
+The comment syntax varies by format:
+
+| Format | Comment style |
+|--------|---------------|
+| Markdown, HTML | `<!-- vale ... -->` |
+| reStructuredText | `.. vale:: ...` |
+| AsciiDoc | `// vale ...` |
+
+  </Accordion>
+
+  <Accordion title="Can Vale lint source code comments?">
+
+Yes. Vale automatically detects comment delimiters for supported languages and lints only the comment text, not the code itself.
+
+For example, in a Go file Vale lints the content of `//` and `/* */` comments but ignores all other lines. The file extension must be a supported code format (`.go`, `.py`, `.js`, `.rb`, and others).
+
+```go
+// This comment is linted by Vale.
+func example() string {
+    return "This string is not linted." // But this inline comment is.
+}
+```
+
+You can also define custom comment delimiters for unsupported languages in `.vale.ini` using the `CommentDelimiters` key.
+
+  </Accordion>
+
+  <Accordion title="What's the difference between BasedOnStyles and individual rule overrides?">
+
+`BasedOnStyles = MyStyle` enables **all** rules in the `MyStyle` directory at their default severity levels. It is a bulk activation.
+
+After listing a style in `BasedOnStyles`, you can override individual rules in the same section:
+
+```ini
+[*.md]
+BasedOnStyles = MyStyle
+
+# Disable a specific rule entirely
+MyStyle.RuleName = NO
+
+# Change a rule's severity level
+MyStyle.OtherRule = warning
+```
+
+This lets you adopt a style wholesale and then tune the rules that do not fit your project, without having to list every rule individually.
+
+  </Accordion>
+
+  <Accordion title="How do I update my installed packages?">
+
+Run `vale sync` again:
+
+```bash
+vale sync
+```
+
+Vale re-downloads every package listed in the `Packages` key of your `.vale.ini` and extracts it into `StylesPath`, replacing whatever was there before. There is no separate "update" command — `sync` is idempotent and always installs the latest version of each package.
+
+  </Accordion>
+
+  <Accordion title="How do I use Vale with multiple config files?">
+
+Use the `--sources` flag to specify additional config files to merge:
+
+```bash
+vale --sources='shared/team.ini,local.ini' docs/
+```
+
+Config files are merged in order. Later files take precedence over earlier ones for any key they define. This is useful for sharing a base configuration across a team while allowing individual overrides.
+
+You can also place config files in the `.vale-config/` directory inside `StylesPath`. Vale automatically loads all files in that directory as a pipeline before the project's `.vale.ini`. This pipeline is skipped when `--sources` is provided.
+
+```
+StylesPath/
+  .vale-config/
+    01-shared.ini     ← loaded automatically
+    02-team.ini       ← loaded automatically
+  MyStyle/
+    ...
+```
+
+  </Accordion>
+
+</AccordionGroup>

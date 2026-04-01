@@ -1,0 +1,121 @@
+---
+title: "Metric"
+description: "Evaluate arbitrary document-level formulas and enforce quantitative thresholds."
+---
+
+The `metric` extension point lets you write custom numeric formulas that are evaluated against document-level statistics. It is similar to `readability` but more flexible — you define the formula yourself using document variables and standard math functions.
+
+```yaml
+extends: metric
+message: "The document has %s sentences. Aim for fewer than 50."
+level: suggestion
+formula: sentences
+condition: "> 50"
+```
+
+The rule fires when `formula` evaluated against the document's statistics satisfies `condition`.
+
+## Parameters
+
+<ParamField path="formula" type="string" required>
+  A mathematical expression evaluated against the document's computed metrics. The expression may reference any of the document variables listed below and standard `math` functions (from the Tengo `math` module).
+
+  Example: `(words / sentences)` — average words per sentence.
+</ParamField>
+
+<ParamField path="condition" type="string" required>
+  A comparison expression appended to the result of `formula` to form a boolean test. The result of `formula` is substituted on the left side. Use standard comparison operators: `>`, `<`, `>=`, `<=`, `==`, `!=`.
+
+  Example: `"> 25"` — triggers when the formula result exceeds 25.
+</ParamField>
+
+## Document variables
+
+The following variables are available in `formula`. They are computed from the document's content and set to `0.0` if not found.
+
+| Variable | Description |
+|---|---|
+| `words` | Total word count |
+| `sentences` | Total sentence count |
+| `paragraphs` | Total paragraph count |
+| `syllables` | Total syllable count |
+| `characters` | Total character count |
+| `complex_words` | Count of polysyllabic words (3+ syllables) |
+| `long_words` | Count of words with 7+ characters |
+| `pre` | Count of `<pre>` / code blocks |
+| `list` | Count of list items |
+| `blockquote` | Count of blockquotes |
+| `heading_h1` | Count of H1 headings |
+| `heading_h2` | Count of H2 headings |
+| `heading_h3` | Count of H3 headings |
+| `heading_h4` | Count of H4 headings |
+| `heading_h5` | Count of H5 headings |
+| `heading_h6` | Count of H6 headings |
+
+<Note>
+  The `metric` extension point is always evaluated at document (`summary`) scope, regardless of any `scope` setting. Vale overrides the scope internally.
+</Note>
+
+## Math functions
+
+The `math` standard library module is available. Useful functions include `math.abs`, `math.ceil`, `math.floor`, `math.pow`, `math.sqrt`, `math.round`.
+
+## The `%s` placeholder
+
+The `message` field supports one `%s` placeholder. Vale substitutes the computed result of `formula` (formatted to two decimal places) into this placeholder.
+
+## Examples
+
+### Flag documents with too many sentences
+
+```yaml
+extends: metric
+message: "The document has %s sentences. Aim for fewer than 50 per page."
+level: suggestion
+formula: sentences
+condition: "> 50"
+```
+
+### Enforce a minimum word count
+
+```yaml
+extends: metric
+message: "Article has only %s words. Aim for at least 300."
+level: warning
+formula: words
+condition: "< 300"
+```
+
+### Average sentence length
+
+```yaml
+extends: metric
+message: "Average sentence length is %s words. Keep it under 25."
+level: suggestion
+formula: words / sentences
+condition: "> 25"
+```
+
+### Ratio of complex words
+
+```yaml
+extends: metric
+message: "%s%% of words are polysyllabic. Aim for under 15%%."
+level: suggestion
+formula: (complex_words / words) * 100
+condition: "> 15"
+```
+
+### Limit heading density
+
+```yaml
+extends: metric
+message: "Document has %s H2 headings. Consider splitting into multiple pages."
+level: suggestion
+formula: heading_h2
+condition: "> 10"
+```
+
+<Tip>
+  Use `vale ls-metrics <file>` to inspect the actual variable values Vale computes for a given document before writing a `metric` rule.
+</Tip>

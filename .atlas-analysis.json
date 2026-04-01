@@ -1,0 +1,116 @@
+{
+  "projectType": "cli-tool",
+  "projectName": "Vale",
+  "projectDescription": "A markup-aware prose linter for technical writers that enforces customizable style guides across Markdown, AsciiDoc, reStructuredText, HTML, and more.",
+  "theme": "palm",
+  "primaryColor": "#84cc14",
+  "lightColor": null,
+  "darkColor": null,
+  "navigation": {
+    "tabs": [
+      {
+        "tab": "Documentation",
+        "groups": [
+          {
+            "group": "Get Started",
+            "pages": [
+              "introduction",
+              "installation",
+              "quickstart"
+            ]
+          },
+          {
+            "group": "Configuration",
+            "pages": [
+              "configuration/overview",
+              "configuration/ini-file",
+              "configuration/scoping",
+              "configuration/vocabularies"
+            ]
+          },
+          {
+            "group": "Styles & Rules",
+            "pages": [
+              "styles/overview",
+              "styles/existence",
+              "styles/substitution",
+              "styles/capitalization",
+              "styles/occurrence",
+              "styles/repetition",
+              "styles/consistency",
+              "styles/conditional",
+              "styles/readability",
+              "styles/spelling",
+              "styles/sequence",
+              "styles/script"
+            ]
+          },
+          {
+            "group": "Integrations",
+            "pages": [
+              "integrations/editors",
+              "integrations/ci-cd",
+              "integrations/packages"
+            ]
+          },
+          {
+            "group": "Reference",
+            "pages": [
+              "reference/commands",
+              "reference/cli-flags",
+              "reference/output-formats",
+              "reference/faq"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "keyFeatures": [
+    "Markup-aware linting that understands Markdown, AsciiDoc, reStructuredText, HTML, DITA, and more",
+    "Highly extensible rule system via YAML — 12 built-in extension points",
+    "Stand-alone binaries with no runtime dependencies (Go)",
+    "Cross-platform: Windows, macOS, and Linux",
+    "Custom vocabulary support (accept/reject word lists)",
+    "Script-based rules using the Tengo scripting language",
+    "Spelling checks with Hunspell dictionary support",
+    "Package/style hub for sharing and reusing style guides",
+    "JSON, line, and template output formats for CI integration",
+    "Scoping system to target specific markup elements"
+  ],
+  "publicApiSurface": [
+    "vale <file|dir|string>",
+    "vale sync",
+    "vale ls-config",
+    "vale ls-metrics <file>",
+    "vale ls-dirs",
+    "vale ls-vars",
+    "vale fix <alert>",
+    "--config <path>",
+    "--glob <pattern>",
+    "--output <CLI|line|JSON|template>",
+    "--minAlertLevel <suggestion|warning|error>",
+    "--ext <extension>",
+    "--filter <expression>",
+    "--no-exit",
+    "--no-wrap",
+    "--ignore-syntax",
+    "--sort",
+    "--normalize",
+    "--relative",
+    "--no-global",
+    "--mode-compat",
+    "existence rule",
+    "substitution rule",
+    "capitalization rule",
+    "occurrence rule",
+    "repetition rule",
+    "consistency rule",
+    "conditional rule",
+    "readability rule",
+    "spelling rule",
+    "sequence rule",
+    "metric rule",
+    "script rule"
+  ]
+}

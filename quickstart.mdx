@@ -1,80 +1,197 @@
 ---
 title: "Quickstart"
-description: "Start building awesome documentation in minutes"
+description: "Create a Vale configuration file, sync a style package, and lint your first document in a few minutes."
 ---
 
-## Get started in three steps
+This guide walks you through a complete Vale workflow — from an empty directory to a working prose linter.
 
-Get your documentation site running locally and make your first customization.
+<Note>
+  Vale requires a `.vale.ini` configuration file before you can lint any files. If Vale cannot find one, it exits with an error.
+</Note>
 
-### Step 1: Set up your local environment
+<Steps>
+  <Step title="Create a .vale.ini config file">
+    In the root of your project, create a file named `.vale.ini`:
 
-<AccordionGroup>
-  <Accordion icon="copy" title="Clone your docs locally">
-    During the onboarding process, you created a GitHub repository with your docs content if you didn't already have one. You can find a link to this repository in your [dashboard](https://dashboard.mintlify.com).
-    
-    To clone the repository locally so that you can make and preview changes to your docs, follow the [Cloning a repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/cloning-a-repository) guide in the GitHub docs.
-  </Accordion>
-  <Accordion icon="rectangle-terminal" title="Start the preview server">
-    1. Install the Mintlify CLI: `npm i -g mint`
-    2. Navigate to your docs directory and run: `mint dev`
-    3. Open `http://localhost:3000` to see your docs live!
-    
-    <Tip>Your preview updates automatically as you edit files.</Tip>
-  </Accordion>
-</AccordionGroup>
+    ```ini .vale.ini
+    StylesPath = .vale/styles
 
-### Step 2: Deploy your changes
+    MinAlertLevel = suggestion
 
-<AccordionGroup>
-  <Accordion icon="github" title="Install our GitHub app">
-    Install the Mintlify GitHub app from your [dashboard](https://dashboard.mintlify.com/settings/organization/github-app).
-    
-    Our GitHub app automatically deploys your changes to your docs site, so you don't need to manage deployments yourself.
-</Accordion>
-<Accordion icon="palette" title="Update your site name and colors">
-    For a first change, let's update the name and colors of your docs site.
+    Packages = Google
 
-    1. Open `docs.json` in your editor.
-    2. Change the `"name"` field to your project name.
-    3. Update the `"colors"` to match your brand.
-    4. Save and see your changes instantly at `http://localhost:3000`.
+    [*.md]
+    BasedOnStyles = Vale, Google
+    ```
 
-    <Tip>Try changing the primary color to see an immediate difference!</Tip>
-  </Accordion>
-</AccordionGroup>
+    What each setting does:
 
-### Step 3: Go live
+    - **`StylesPath`** — the directory where Vale stores downloaded style packages.
+    - **`MinAlertLevel`** — the lowest severity to report. Options are `suggestion`, `warning`, and `error`.
+    - **`Packages`** — a comma-separated list of packages to download when you run `vale sync`.
+    - **`[*.md]`** — a glob section that applies settings to matching files.
+    - **`BasedOnStyles`** — the styles to enforce for files in this section. `Vale` is the built-in style; `Google` is the downloaded package.
 
-<Accordion icon="rocket" title="Publish your docs">
-  1. Commit and push your changes.
-  2. Your docs will update and be live in moments!
-</Accordion>
+    <Tip>
+      You can target multiple formats in the same config. For example, add `[*.{md,rst}]` to lint both Markdown and reStructuredText with the same rules.
+    </Tip>
+  </Step>
+
+  <Step title="Download style packages">
+    Run `vale sync` to download the packages listed in your `.vale.ini`:
+
+    ```bash
+    vale sync
+    ```
+
+    Vale downloads each package and installs it into your `StylesPath` directory. You should see output like:
+
+    ```
+    ✓ Synced 1 package(s) to '.vale/styles'.
+    ```
+
+    After syncing, your project layout looks like this:
+
+    ```
+    .
+    ├── .vale.ini
+    └── .vale/
+        └── styles/
+            └── Google/
+                └── ...
+    ```
+  </Step>
+
+  <Step title="Create a sample document">
+    Create a Markdown file to lint:
+
+    ```bash
+    cat > sample.md << 'EOF'
+    # Getting Started
+
+    Simply click the button to begin. This is very unique and will make it
+    easier to use the app. Please be advised that you should use the interface
+    in order to complete the task.
+    EOF
+    ```
+
+    This sample contains several style issues that Vale will catch.
+  </Step>
+
+  <Step title="Run Vale">
+    Lint the file:
+
+    ```bash
+    vale sample.md
+    ```
+
+    You should see output similar to:
+
+    ```
+    sample.md
+     3:1   warning  Try to avoid using              Google.We
+                    'Simply'.
+     3:29  warning  'unique' is a weasel word.      Google.Weasel
+     4:1   warning  'easier' is a weasel word.      Google.Weasel
+     5:1   suggestion  Try to avoid using            Google.PassiveVoice
+                       passive voice.
+     5:12  warning  'in order to' is a wordy        Google.WordList
+                    phrase; use 'to' instead.
+
+    ✖ 0 errors, 4 warnings, 1 suggestion
+    ```
+  </Step>
+
+  <Step title="Understand the output">
+    Each line in the output follows this format:
+
+    ```
+    <file>:<line>:<column>  <severity>  <message>  <rule>
+    ```
+
+    | Field | Description |
+    |-------|-------------|
+    | `file` | The path to the file that was linted |
+    | `line` | The line number where the issue was found |
+    | `column` | The column position of the flagged text |
+    | `severity` | One of `error`, `warning`, or `suggestion` |
+    | `message` | A human-readable description of the issue |
+    | `rule` | The style and rule name in `Style.RuleName` format |
+
+    The summary line at the bottom reports the total count for each severity level. Vale exits with a non-zero status code if any errors are found.
+
+    **Alert levels**
+
+    | Level | Meaning |
+    |-------|---------|
+    | `suggestion` | Style preferences — worth reviewing but not blocking |
+    | `warning` | Likely violations of your style guide |
+    | `error` | Definite issues such as banned terms or required patterns |
+
+    You control which levels are shown using `MinAlertLevel` in your `.vale.ini`, or with the `--minAlertLevel` flag at runtime.
+  </Step>
+</Steps>
+
+## Other ways to run Vale
+
+### Lint a directory
+
+Pass a directory path to lint all matching files recursively:
+
+```bash
+vale docs/
+```
+
+### Lint a string directly
+
+Pass a quoted string to lint inline text without a file:
+
+```bash
+vale "This is very unique and simply amazing."
+```
+
+### Lint via stdin
+
+Pipe content into Vale using stdin. Use `--ext` to tell Vale which format to treat the input as:
+
+```bash
+cat sample.md | vale --ext=.md
+```
+
+Or use `--path` to associate the stdin content with a specific file path (useful when your config has path-specific rules):
+
+```bash
+cat sample.md | vale --path=docs/sample.md
+```
+
+### Change the output format
+
+Vale supports multiple output formats for CI and tooling integration:
+
+```bash
+# Default terminal output
+vale sample.md
+
+# JSON output
+vale --output=JSON sample.md
+
+# Line-based output (one issue per line)
+vale --output=line sample.md
+```
 
 ## Next steps
 
-Now that you have your docs running, explore these key features:
-
 <CardGroup cols={2}>
-
-<Card title="Write Content" icon="pen-to-square" href="/essentials/markdown">
-  Learn MDX syntax and start writing your documentation.
-</Card>
-
-<Card title="Customize style" icon="palette" href="/essentials/settings">
-  Make your docs match your brand perfectly.
-</Card>
-
-<Card title="Add code examples" icon="square-code" href="/essentials/code">
-  Include syntax-highlighted code blocks.
-</Card>
-
-<Card title="API documentation" icon="code" href="/api-reference/introduction">
-  Auto-generate API docs from OpenAPI specs.
-</Card>
-
+  <Card title="Configuration" icon="sliders" href="/configuration/overview">
+    Learn all `.vale.ini` settings and how to structure your config for larger projects.
+  </Card>
+  <Card title="Styles & rules" icon="pen-nib" href="/styles/overview">
+    Write your own YAML rules to enforce your team's specific style guide.
+  </Card>
+  <Card title="Integrations" icon="plug" href="/integrations/editors">
+    Connect Vale to your editor, CI/CD pipeline, or use community packages.
+  </Card>
+  <Card title="CLI reference" icon="terminal" href="/reference/commands">
+    Full reference for every Vale command and flag.
+  </Card>
 </CardGroup>
-
-<Note>
-  **Need help?** See our [full documentation](https://mintlify.com/docs) or join our [community](https://mintlify.com/community).
-</Note>

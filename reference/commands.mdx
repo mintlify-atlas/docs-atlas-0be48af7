@@ -1,0 +1,249 @@
+---
+title: "Commands"
+description: "Every Vale CLI command, with arguments, behavior, and examples."
+---
+
+Vale's CLI takes a single optional command followed by arguments. When no command is given, Vale runs its default linting pass.
+
+## `vale <inputs>`
+
+Lint one or more files, directories, or an inline string.
+
+Vale determines the input mode from the arguments you provide:
+
+**Inline string** — when a single argument is passed and it is not a path to an existing file or directory, Vale treats it as raw text to lint.
+
+```bash
+vale "Check this sentence for errors."
+```
+
+Use `--ext` to tell Vale which format to apply to the inline text:
+
+```bash
+vale --ext=.md "Check this _Markdown_ sentence."
+```
+
+**Files and directories** — one or more file paths or directory paths. Vale lints all matching files.
+
+```bash
+vale README.md
+vale docs/ README.md CHANGELOG.md
+```
+
+**Stdin** — when no arguments are provided and stdin is not a terminal, Vale reads from stdin. Use `--ext` to set the format, or `--path` to associate a real file path.
+
+```bash
+cat file.md | vale
+vale --ext=.md < file.md
+vale --path=docs/guide.md < file.md
+```
+
+<Note>
+  When passing multiple arguments, every argument must resolve to an existing file or directory. Mixing real paths with non-existent strings raises an error.
+</Note>
+
+### Arguments
+
+<ParamField path="inputs" type="string[]">
+  One or more file paths, directory paths, or a single inline text string. Omit entirely to read from stdin.
+</ParamField>
+
+### Example output
+
+```
+ docs/guide.md
+  12:4   warning  Use 'for example' instead of 'e.g.'  Vale.Avoid
+  34:1   error    Found a passive construction.          MyStyle.Passive
+
+✖ 1 error, 1 warning and 0 suggestions in 1 file.
+```
+
+---
+
+## `vale sync`
+
+Download and install all packages listed in the `Packages` key of your `.vale.ini`.
+
+```bash
+vale sync
+```
+
+Vale reads the `Packages` field from your root `.vale.ini`, downloads each package, and extracts it into `StylesPath`. A progress bar is shown during the download.
+
+```
+ Syncing write-good ━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100%
+✓ Synced 3 package(s) to '/home/user/.local/share/vale/styles'.
+```
+
+<Note>
+  `vale sync` only operates on a single config file — the root `.vale.ini`. Running it with `--sources` or in a pipeline context still uses the root file for the `Packages` list.
+</Note>
+
+### Arguments
+
+This command takes no arguments.
+
+---
+
+## `vale ls-config`
+
+Print the fully resolved configuration as JSON to stdout.
+
+```bash
+vale ls-config
+```
+
+Vale loads the configuration pipeline (including any `--config`, `--sources`, or global config) and serializes the resulting `Config` struct to indented JSON. This is the most reliable way to debug why Vale is or is not applying a rule.
+
+```bash
+# Use with jq to inspect a specific field
+vale ls-config | jq '.GBaseStyles'
+```
+
+```json
+[
+  "Vale",
+  "write-good"
+]
+```
+
+### Arguments
+
+This command takes no arguments.
+
+---
+
+## `vale ls-metrics <file>`
+
+Print computed readability metrics for a file as JSON.
+
+```bash
+vale ls-metrics docs/guide.md
+```
+
+Vale lints the file internally and then exposes the calculated metrics (word count, sentence length, Flesch–Kincaid grade level, and similar statistics) as a JSON object.
+
+```json
+{
+  "characters": 4821,
+  "complex_words": 12,
+  "long_words": 47,
+  "paragraphs": 18,
+  "sentences": 62,
+  "syllables": 891,
+  "words": 601
+}
+```
+
+### Arguments
+
+<ParamField path="file" type="string" required>
+  Path to the file to analyze. Exactly one argument is required; the file must exist.
+</ParamField>
+
+---
+
+## `vale ls-dirs`
+
+Print the default locations Vale uses for its configuration assets.
+
+```bash
+vale ls-dirs
+```
+
+By default, output is a table:
+
+```
+ Asset         Default Location                              Found
+ StylesPath    /home/user/.local/share/vale/styles           ✓
+ .vale.ini     /home/user/.config/vale/.vale.ini             ✗
+ vale-native   /home/user/.local/share/vale/vale-native      ✗
+```
+
+Pass `--output=JSON` to receive structured output instead:
+
+```bash
+vale ls-dirs --output=JSON
+```
+
+```json
+{
+  ".vale.ini": "/home/user/.config/vale/.vale.ini",
+  "StylesPath": "/home/user/.local/share/vale/styles",
+  "vale-native": "/home/user/.local/share/vale/vale-native"
+}
+```
+
+### Arguments
+
+This command takes no arguments.
+
+---
+
+## `vale ls-vars`
+
+Print all supported environment variables with their current values.
+
+```bash
+vale ls-vars
+```
+
+Default table output:
+
+```
+ Variable            Description                                         Value
+ VALE_CONFIG_PATH    Override the default search process by ...         ✗
+ VALE_STYLES_PATH    Specify the location of the default StylesPath.    /custom/styles
+```
+
+Pass `--output=JSON` to receive a key/value map:
+
+```bash
+vale ls-vars --output=JSON
+```
+
+```json
+{
+  "VALE_CONFIG_PATH": "",
+  "VALE_STYLES_PATH": "/custom/styles"
+}
+```
+
+The supported variables are:
+
+| Variable | Description |
+|---|---|
+| `VALE_CONFIG_PATH` | Override the default config search by pointing directly at a `.vale.ini` file. |
+| `VALE_STYLES_PATH` | Set the default `StylesPath` when no project config defines one. |
+
+### Arguments
+
+This command takes no arguments.
+
+---
+
+## `vale fix <alert>`
+
+Attempt to automatically fix the problem described by an alert.
+
+```bash
+vale fix '{"Action":{"Name":"replace","Params":["e.g.","for example"]},...}'
+```
+
+You can also pass the path to a file containing a JSON alert object:
+
+```bash
+vale fix /tmp/alert.json
+```
+
+Vale parses the alert, applies the action described in the `Action` field (for example, a `replace` substitution), and prints the result as JSON.
+
+<Note>
+  Not all rules define an `Action`. For rules that do not, `vale fix` returns the alert unchanged. The command is primarily useful when integrating Vale into editors or automated pipelines that can apply suggested replacements.
+</Note>
+
+### Arguments
+
+<ParamField path="alert" type="string" required>
+  A JSON-encoded alert string or a path to a file containing one. Exactly one argument is required.
+</ParamField>

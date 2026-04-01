@@ -1,0 +1,129 @@
+---
+title: "Styles & Rules Overview"
+description: "Learn how Vale styles are organized and how to configure rules for your project."
+---
+
+A **style** is a named directory of YAML rule files stored under your `StylesPath`. Each file in a style defines one rule that Vale enforces when linting prose.
+
+## Directory layout
+
+```
+StylesPath/
+└── MyStyle/
+    ├── SentenceCase.yml
+    ├── AvoidPassiveVoice.yml
+    └── PreferEmail.yml
+```
+
+Vale resolves rule names from the directory and file names. The rule above with path `MyStyle/SentenceCase.yml` is referenced in output as `MyStyle.SentenceCase`.
+
+## Extension points
+
+Every rule YAML file must declare `extends` with one of the following built-in extension points. Each extension point implements a distinct category of check.
+
+| Extension point    | What it does                                              |
+| ------------------ | --------------------------------------------------------- |
+| `existence`        | Flags the presence of matched tokens                      |
+| `substitution`     | Flags tokens that should be replaced with alternatives    |
+| `capitalization`   | Enforces a capitalization style on matched text           |
+| `occurrence`       | Limits how many times a token appears in a scope          |
+| `repetition`       | Flags consecutive duplicate tokens                        |
+| `consistency`      | Enforces consistent use of one spelling form over another |
+| `conditional`      | Requires that if term A appears, term B must also appear  |
+| `readability`      | Applies readability formula scoring to text               |
+| `spelling`         | Checks spelling against Hunspell dictionaries             |
+| `sequence`         | Checks NLP part-of-speech token sequences                 |
+| `metric`           | Evaluates arbitrary document-level formulas               |
+| `script`           | Runs custom Tengo scripts for programmatic rules          |
+
+## Required and common fields
+
+Every rule YAML file must contain at least `extends` and `message`. All other fields are optional.
+
+```yaml
+extends: existence
+message: "Avoid '%s'."
+level: warning
+```
+
+### Shared fields
+
+<ParamField path="extends" type="string" required>
+  The extension point this rule uses. Must be one of the twelve extension point names listed above.
+</ParamField>
+
+<ParamField path="message" type="string" required>
+  The message displayed when the rule triggers. Use `%s` as a placeholder for the matched text (and, for some extension points, the suggested replacement).
+</ParamField>
+
+<ParamField path="level" type="string">
+  The severity of the alert. One of `suggestion`, `warning`, or `error`. Defaults to `warning` when omitted.
+</ParamField>
+
+<ParamField path="scope" type="string | string[]">
+  The markup scope(s) to which the rule applies, such as `text`, `heading`, `sentence`, or `summary`. Defaults to `text` for most extension points.
+</ParamField>
+
+<ParamField path="link" type="string">
+  A URL to documentation or rationale for the rule, shown alongside the alert.
+</ParamField>
+
+<ParamField path="description" type="string">
+  Additional detail displayed with the alert, beyond the `message` field.
+</ParamField>
+
+## Enabling styles in `.vale.ini`
+
+Add style names to `BasedOnStyles` in your `.vale.ini` configuration file. Vale loads every rule file found in each named style directory.
+
+```ini
+StylesPath = styles
+
+[*.md]
+BasedOnStyles = Vale, MyStyle
+```
+
+<Note>
+  The built-in `Vale` style is always available and provides default rules for spelling, repetition, and term substitution.
+</Note>
+
+## Rule pages
+
+<CardGroup cols={2}>
+  <Card title="Existence" icon="magnifying-glass" href="/styles/existence">
+    Flag the presence of specific tokens or phrases.
+  </Card>
+  <Card title="Substitution" icon="arrow-right-arrow-left" href="/styles/substitution">
+    Flag tokens that should be replaced with preferred alternatives.
+  </Card>
+  <Card title="Capitalization" icon="font" href="/styles/capitalization">
+    Enforce a capitalization style on headings or other scopes.
+  </Card>
+  <Card title="Occurrence" icon="hashtag" href="/styles/occurrence">
+    Limit how many times a token appears within a scope.
+  </Card>
+  <Card title="Repetition" icon="copy" href="/styles/repetition">
+    Flag consecutive or near-duplicate tokens.
+  </Card>
+  <Card title="Consistency" icon="scale-balanced" href="/styles/consistency">
+    Enforce consistent use of one form of a term across a document.
+  </Card>
+  <Card title="Conditional" icon="code-branch" href="/styles/conditional">
+    Require that if one term appears, another must also appear.
+  </Card>
+  <Card title="Readability" icon="book-open" href="/styles/readability">
+    Apply readability formula scoring to block-level text.
+  </Card>
+  <Card title="Spelling" icon="spell-check" href="/styles/spelling">
+    Check spelling using Hunspell-compatible dictionaries.
+  </Card>
+  <Card title="Sequence" icon="list-ol" href="/styles/sequence">
+    Check for NLP part-of-speech token sequences.
+  </Card>
+  <Card title="Metric" icon="calculator" href="/styles/metric">
+    Evaluate custom document-level formulas and enforce numeric thresholds.
+  </Card>
+  <Card title="Script" icon="code" href="/styles/script">
+    Run custom Tengo scripts for programmatic rules.
+  </Card>
+</CardGroup>

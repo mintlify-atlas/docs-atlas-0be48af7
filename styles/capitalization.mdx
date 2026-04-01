@@ -1,0 +1,116 @@
+---
+title: "Capitalization"
+description: "Enforce a capitalization style on headings and other scopes."
+---
+
+The `capitalization` extension point checks whether text matches a specified capitalization style. It is most commonly applied to headings to enforce consistent title case or sentence case across a document.
+
+```yaml
+extends: capitalization
+message: "'%s' should be in sentence case: '%s'."
+level: warning
+scope: heading
+match: $sentence
+```
+
+## Parameters
+
+<ParamField path="match" type="string" required>
+  The capitalization style to enforce. Accepts the following built-in values:
+
+  - `$title` — Title case (AP style by default; use `style: Chicago` for Chicago style)
+  - `$sentence` — Sentence case (only the first word and proper nouns capitalized)
+  - `$lower` — All lowercase
+  - `$upper` — All uppercase
+  - A custom regular expression — The text must match the given pattern to be considered correct
+</ParamField>
+
+<ParamField path="style" type="string">
+  The title case style when `match` is set to `$title`. Accepts `AP` (default) or `Chicago`.
+</ParamField>
+
+<ParamField path="exceptions" type="string[]">
+  A list of words that are always considered correctly capitalized regardless of the `match` style. Useful for proper nouns, product names, and acronyms.
+</ParamField>
+
+<ParamField path="indicators" type="string[]">
+  A list of word suffixes that signal the next token should be treated as the start of a new sentence. For example, `[".", "?", "!"]` so that sentence case is reset after abbreviations.
+</ParamField>
+
+<ParamField path="threshold" type="number">
+  A value between `0` and `1` representing the minimum proportion of words that must conform to the style before the rule triggers. Defaults to `0.8`. A value of `1.0` requires every word to conform.
+</ParamField>
+
+<ParamField path="vocab" type="boolean">
+  When `true` (default), terms from the active Vale Vocabulary are automatically added to `exceptions`.
+</ParamField>
+
+<ParamField path="prefix" type="string">
+  A prefix string to ignore when evaluating capitalization. For example, set `prefix: "Re:"` to skip a common email subject prefix.
+</ParamField>
+
+## Examples
+
+### Enforce sentence case on headings
+
+```yaml
+extends: capitalization
+message: "'%s' should use sentence case. Did you mean '%s'?"
+level: warning
+scope: heading
+match: $sentence
+exceptions:
+  - API
+  - GitHub
+  - OAuth
+```
+
+### Enforce title case (AP style) on headings
+
+```yaml
+extends: capitalization
+message: "'%s' should use title case. Did you mean '%s'?"
+level: warning
+scope: heading
+match: $title
+exceptions:
+  - macOS
+  - iOS
+  - iPadOS
+```
+
+### Enforce title case (Chicago style)
+
+```yaml
+extends: capitalization
+message: "'%s' should use Chicago-style title case. Did you mean '%s'?"
+level: suggestion
+scope: heading
+match: $title
+style: Chicago
+```
+
+### Enforce all-lowercase
+
+```yaml
+extends: capitalization
+message: "Labels must be lowercase, but '%s' is not."
+level: error
+scope: heading.h4
+match: $lower
+```
+
+### Custom pattern
+
+Use a regular expression when none of the built-in styles fits. The text must match the pattern to be considered correctly capitalized.
+
+```yaml
+extends: capitalization
+message: "Version strings must follow the pattern 'v1.2.3'."
+level: error
+match: ^v\d+\.\d+\.\d+$
+```
+
+<Tip>
+  The `threshold` parameter is useful when headings contain inline code or product names that would otherwise cause many false positives. The default of `0.8` means the rule fires only when fewer than 80% of words are correctly cased.
+</Tip>

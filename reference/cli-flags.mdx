@@ -1,0 +1,191 @@
+---
+title: "CLI flags"
+description: "All Vale command-line flags grouped by category, with types, defaults, and usage examples."
+---
+
+Flags are passed before or after the input arguments and override values from `.vale.ini` for that invocation only.
+
+```bash
+vale [flags] [command] [inputs...]
+```
+
+---
+
+## Input
+
+<ParamField path="--ext" type="string" default=".txt">
+  File extension to associate with stdin or an inline string argument. Vale uses the extension to select the correct parser and apply the right section rules from `.vale.ini`.
+
+  ```bash
+  vale --ext=.md "Check this _Markdown_ text."
+  cat file.rst | vale --ext=.rst
+  ```
+</ParamField>
+
+<ParamField path="--path" type="string">
+  A file path to associate with stdin input. When set, Vale uses this path when reporting alert locations and for section matching in `.vale.ini`. Takes precedence over `--ext` for format detection.
+
+  ```bash
+  vale --path=docs/guide.md < file.md
+  ```
+</ParamField>
+
+<ParamField path="--glob" type="string" default="*">
+  A glob pattern that filters which files Vale lints when given a directory as input. Only files whose names match the pattern are linted.
+
+  ```bash
+  vale --glob='*.{md,txt}' docs/
+  vale --glob='*.md' .
+  ```
+</ParamField>
+
+<ParamField path="--ignore-syntax" type="boolean" default="false">
+  Lint every file line-by-line without parsing markup. Vale ignores all markup-aware scoping and treats every line as plain text. Useful for files with unusual or unsupported formats.
+
+  ```bash
+  vale --ignore-syntax myfile.custom
+  ```
+</ParamField>
+
+---
+
+## Output
+
+<ParamField path="--output" type="string" default="CLI">
+  The output format to use. Accepts `CLI` (colored terminal output), `line` (machine-readable single-line format), `JSON` (structured JSON), or a path to a Go template file.
+
+  ```bash
+  vale --output=JSON docs/
+  vale --output=line docs/
+  vale --output=/path/to/template.tmpl docs/
+  ```
+
+  See [Output formats](/reference/output-formats) for full details on each format.
+</ParamField>
+
+<ParamField path="--minAlertLevel" type="string">
+  The minimum severity level to display. Alerts below this level are suppressed. Accepts `suggestion`, `warning`, or `error`. Overrides the `MinAlertLevel` key in `.vale.ini`.
+
+  ```bash
+  vale --minAlertLevel=error docs/
+  ```
+</ParamField>
+
+<ParamField path="--no-wrap" type="boolean" default="false">
+  Disable line wrapping in CLI output. By default, long messages are wrapped to fit the terminal width. Enable this flag when piping output or when you need consistent column widths.
+
+  ```bash
+  vale --no-wrap docs/
+  ```
+</ParamField>
+
+<ParamField path="--sort" type="boolean" default="false">
+  Sort files alphabetically by name in the output. Without this flag, files appear in the order the filesystem returns them.
+
+  ```bash
+  vale --sort docs/
+  ```
+</ParamField>
+
+<ParamField path="--normalize" type="boolean" default="false">
+  Replace OS-specific path separators with forward slashes (`/`) in all reported file paths. Useful for consistent output on Windows.
+
+  ```bash
+  vale --normalize docs/
+  ```
+</ParamField>
+
+<ParamField path="--relative" type="boolean" default="false">
+  Return file paths relative to the directory where Vale is invoked rather than absolute paths.
+
+  ```bash
+  vale --relative docs/
+  ```
+</ParamField>
+
+---
+
+## Config
+
+<ParamField path="--config" type="string">
+  Path to a `.vale.ini` file. When provided, Vale skips the normal directory-walk search and loads only this file (plus the global config, unless `--no-global` is also set).
+
+  ```bash
+  vale --config='/path/to/project/.vale.ini' docs/
+  ```
+</ParamField>
+
+<ParamField path="--sources" type="string">
+  A comma-separated list of additional config files to load and merge. Files are merged in order; later files take precedence over earlier ones. When `--sources` is set, the automatic `.vale-config/` pipeline is skipped.
+
+  ```bash
+  vale --sources='team.ini,local.ini' docs/
+  ```
+</ParamField>
+
+<ParamField path="--filter" type="string">
+  An expression to filter which rules are applied during linting. Only rules matching the expression are run.
+
+  ```bash
+  vale --filter='Vale.Avoid' docs/
+  ```
+</ParamField>
+
+<ParamField path="--no-global" type="boolean" default="false">
+  Do not load the global configuration file at the XDG config path (`~/.config/vale/.vale.ini` on Linux/macOS). Use this flag when you want only the project-level config to apply.
+
+  ```bash
+  vale --no-global docs/
+  ```
+</ParamField>
+
+<ParamField path="--mode-compat" type="boolean" default="false">
+  Prioritize local Vale configurations over global ones. Useful in monorepo setups where subdirectories each have their own `.vale.ini`.
+
+  ```bash
+  vale --mode-compat docs/
+  ```
+</ParamField>
+
+---
+
+## Behavior
+
+<ParamField path="--no-exit" type="boolean" default="false">
+  Always exit with code `0`, even when Vale finds errors. By default, Vale exits with code `1` if any `error`-level alerts are found. Use this flag in CI pipelines where you want to report results without failing the build.
+
+  ```bash
+  vale --no-exit docs/
+  ```
+</ParamField>
+
+<ParamField path="--version" type="boolean" default="false">
+  Print the current Vale version and exit.
+
+  ```bash
+  vale --version
+  # vale version 3.x.x
+  ```
+
+  Short form: `-v`
+</ParamField>
+
+<ParamField path="--help" type="boolean" default="false">
+  Print usage information and exit.
+
+  ```bash
+  vale --help
+  ```
+
+  Short form: `-h`
+</ParamField>
+
+---
+
+## Exit codes
+
+| Code | Meaning |
+|------|---------|
+| `0` | Success — no `error`-level alerts found (or `--no-exit` is set). |
+| `1` | One or more `error`-level alerts were found. |
+| `2` | Vale encountered an internal error (bad config, missing file, etc.). |

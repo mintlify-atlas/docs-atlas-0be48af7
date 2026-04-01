@@ -1,0 +1,89 @@
+---
+title: "Occurrence"
+description: "Limit or require how many times a token appears within a given scope."
+---
+
+The `occurrence` extension point counts how many times a regular expression matches within the current scope and fires an alert when the count falls outside the allowed range. Use `max` to cap overused words or phrases, or `min` to require their presence.
+
+```yaml
+extends: occurrence
+message: "'very' appears %s times. Use it at most 2 times per sentence."
+level: warning
+scope: sentence
+token: very
+max: 2
+```
+
+## Parameters
+
+<ParamField path="token" type="string" required>
+  A regular expression pattern to count within the current scope. The pattern is wrapped in a non-capturing group before compiling.
+</ParamField>
+
+<ParamField path="max" type="integer">
+  The maximum number of times `token` may appear. An alert is raised when the count exceeds this value. Omit or set to `0` to disable the upper limit.
+</ParamField>
+
+<ParamField path="min" type="integer">
+  The minimum number of times `token` must appear. An alert is raised when the count falls below this value. Omit or set to `0` to disable the lower limit.
+</ParamField>
+
+<ParamField path="ignorecase" type="boolean">
+  When `true`, matching is case-insensitive. Defaults to `false`.
+</ParamField>
+
+<Note>
+  At least one of `max` or `min` must be set to a non-zero value for the rule to have any effect.
+</Note>
+
+## Examples
+
+### Limit a filler word per sentence
+
+```yaml
+extends: occurrence
+message: "'very' appears %s time(s) in this sentence. Keep it to 1 or fewer."
+level: warning
+scope: sentence
+token: very
+max: 1
+ignorecase: true
+```
+
+### Cap passive-voice constructions per paragraph
+
+```yaml
+extends: occurrence
+message: "Found %s passive constructions in this paragraph. Aim for 2 or fewer."
+level: suggestion
+scope: paragraph
+token: \b(was|were|been|being)\s+\w+ed\b
+max: 2
+ignorecase: true
+```
+
+### Require a specific term in every document
+
+```yaml
+extends: occurrence
+message: "This document must include the term 'required' at least once, but found %s occurrences."
+level: error
+scope: text
+token: \bRequired\b
+min: 1
+```
+
+### Limit comma usage per sentence
+
+```yaml
+extends: occurrence
+message: "This sentence contains %s commas. Consider breaking it up."
+level: suggestion
+scope: sentence
+token: ","
+max: 3
+```
+
+<Tip>
+  When the count is zero (no matches found), Vale reports the alert at line 1 of the file rather than at a specific match location, because there is no match span to point to.
+</Tip>

@@ -1,0 +1,150 @@
+---
+title: "Script"
+description: "Run custom Tengo scripts for complex, programmatic Vale rules."
+---
+
+The `script` extension point lets you write rules in [Tengo](https://github.com/d5/tengo), a fast, embeddable scripting language for Go. Use it when the built-in extension points cannot express the logic you need — for example, rules that require stateful computation, multi-step processing, or access to standard library functions like string manipulation and math.
+
+```yaml
+extends: script
+message: "Found '%s'."
+level: warning
+script: my-style/scripts/check-length.tengo
+```
+
+## Parameters
+
+<ParamField path="script" type="string" required>
+  Either a path to a `.tengo` file or inline Tengo source code as a string. When the value ends with `.tengo`, Vale reads the file from `StylesPath/config/scripts/` (or resolves it relative to `StylesPath`). Otherwise, the value is treated as inline script source and compiled directly.
+</ParamField>
+
+## Script inputs
+
+Vale exposes the following variable to your Tengo script:
+
+| Variable | Type   | Description                                      |
+| -------- | ------ | ------------------------------------------------ |
+| `scope`  | string | The full text of the current block being checked |
+
+## Script outputs
+
+Your script must populate a `matches` variable — an array of maps. Each map must contain:
+
+| Key       | Type    | Required | Description                                              |
+| --------- | ------- | -------- | -------------------------------------------------------- |
+| `begin`   | integer | Yes      | Byte offset of the match start (0-indexed)               |
+| `end`     | integer | Yes      | Byte offset of the match end (exclusive, 0-indexed)      |
+| `message` | string  | No       | A custom per-match message, overriding the rule `message`|
+
+## Available standard library modules
+
+Vale sandboxes script execution: only the following Tengo standard modules are available. The `os` module is intentionally excluded for security.
+
+- `text` — string manipulation functions
+- `fmt` — string formatting
+- `math` — mathematical functions
+
+## Script file location
+
+Store `.tengo` script files in:
+
+```
+StylesPath/
+└── config/
+    └── scripts/
+        └── check-length.tengo
+```
+
+Reference them in your rule YAML relative to that directory:
+
+```yaml
+script: check-length.tengo
+```
+
+## Examples
+
+### Inline script: flag sentences over 30 words
+
+```yaml
+extends: script
+message: "Sentence is too long (%s). Keep sentences under 30 words."
+level: warning
+script: |
+  text := import("text")
+  matches := []
+  sentences := text.re_find(`[^.!?]+[.!?]`, scope, -1)
+  for s in sentences {
+    words := text.split(text.trim_space(s[0]), " ")
+    count := len(words)
+    if count > 30 {
+      start := text.index(scope, s[0])
+      matches = append(matches, {
+        begin: start,
+        end: start + len(s[0]),
+        message: format("Sentence has %d words (limit: 30).", count)
+      })
+    }
+  }
+```
+
+### External script file
+
+Create `StylesPath/config/scripts/check-acronyms.tengo`:
+
+```javascript
+text := import("text")
+
+matches := []
+pattern := `\b[A-Z]{2,5}\b`
+
+found := text.re_find(pattern, scope, -1)
+for f in found {
+  word := f[0]
+  matches = append(matches, {
+    begin: f[1],
+    end:   f[1] + len(word)
+  })
+}
+```
+
+Then reference it in the rule YAML:
+
+```yaml
+extends: script
+message: "Acronym '%s' may need a definition on first use."
+level: suggestion
+script: check-acronyms.tengo
+```
+
+### Inline script: custom per-match messages
+
+The `message` key in each match map overrides the rule-level `message` for that specific occurrence:
+
+```yaml
+extends: script
+message: "Issue found: '%s'."
+level: warning
+script: |
+  text := import("text")
+  math := import("math")
+  matches := []
+  words := text.split(scope, " ")
+  for i, w in words {
+    if len(w) > 15 {
+      start := text.index(scope, w)
+      matches = append(matches, {
+        begin:   start,
+        end:     start + len(w),
+        message: format("'%s' is a very long word (%d characters).", w, len(w))
+      })
+    }
+  }
+```
+
+<Warning>
+  Byte offsets in `begin` and `end` must be accurate. Vale uses them directly to extract the matched text from `scope`. Off-by-one errors will produce incorrect match text or panics.
+</Warning>
+
+<Note>
+  Unlike other extension points, `script` rules use raw byte offsets rather than rune (Unicode code point) offsets. Take care when working with multi-byte UTF-8 characters.
+</Note>
